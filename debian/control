@@ -1,19 +1,23 @@
 Source: liblockfile
 Section: devel
-Priority: optional
+Priority: standard
 Maintainer:  Miquel van Smoorenburg <miquels@cistron.nl>
-Standards-Version: 2.4.0.0
+Standards-Version: 3.5.2.0
 
 Package: liblockfile1
 Section: libs
+Priority: important
 Architecture: any
 Depends: ${shlibs:Depends}
-Description: Shared library with NFS-safe locking functions. Includes the
- command-line utility ``dotlockfile''.
+Description: NFS-safe locking library, includes dotlockfile program
+ Liblockfile is a shared library with NFS-safe locking functions. It
+ includes the command-line utility ``dotlockfile''.
 
 Package: liblockfile-dev
 Section: devel
+Priority: optional
 Architecture: any
 Depends: liblockfile1 (=${Source-Version})
 Description: Development library for liblockfile.
-  Includes headers and documentation.
+ This is a development library for liblockfile. It includes headers and
+ documentation.

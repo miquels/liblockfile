@@ -5,6 +5,7 @@ dotlockfile \- Utility to manage lockfiles
 .B /usr/bin/dotlockfile
 .RB [ \-p ]
 .RB [ \-c ]
+.RB [ \-u ]
 .RB [ \-m ]
 .RB [ \-l|\-u ]
 .RB [ \-r
@@ -25,7 +26,7 @@ the name \fBdotlockfile\fP \fI:)\fP.
 .SH OPTIONS
 .IP "\fB\-l\fP"
 Create a lockfile. This is the default.
-.IP "\fB\-r\fP"
+.IP "\fB\-u\fP"
 Remove a lockfile.
 .IP "\fB\-c\fP"
 Check for the existence of a \fBvalid\fP lockfile.
@@ -40,7 +41,7 @@ After each next try, a sleep of 5 seconds \fIextra\fP occurs up to a
 maximum sleep of 60 seconds between tries.
 .IP "\fB\-m\fP"
 Lock or unlock the current users mailbox. The path to the mailbox is the
-default system mailspool directory (usually \fI/var/spool/mail\fP) with the
+default system mailspool directory (usually \fI/var/mail\fP) with the
 username as gotten from \fIgetpwuid()\fP appended. If the environment
 variable \fI$MAIL\fP is set, that is used instead. Then the string
 \fI".lock"\fP is appended to get the name of the actual lockfile.

@@ -1,4 +1,4 @@
-.TH LOCKFILE_CREATE 3  "17 April 1999" "Linux Manpage" "Linux Programmer's Manual"
+.TH LOCKFILE_CREATE 3  "29 March 2001" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
 lockfile_create, lockfile_remove, lockfile_touch, lockfile_check \- manage lockfiles
 .SH SYNOPSIS
@@ -98,6 +98,96 @@ Before retrying, we sleep for \fIn\fP seconds. \fIn\fP is initially 5
 seconds, but after every retry 5 extra seconds is added up to a maximum
 of 60 seconds (an incremental backoff). Then we go to
 step \fI2\fP up to \fIretries\fP times.
+
+.PP
+.SH REMOTE FILE SYSTEMS AND THE KERNEL ATTRIBUTE CACHE
+.PP
+These functions do not lock a file - they \fIgenerate\fP a \fIlockfile\fP.
+However in a lot of cases, such as Unix mailboxes, all concerned programs
+accessing the mailboxes agree on the fact that the presence of
+<filename>.lock means that <filename> is locked.
+.PP
+If you are using 
+.B lockfile_create
+to create a lock on a file that resides on a remote server, and you
+already have that file open, you need to flush the NFS attribute cache
+after locking. This is needed to prevent the following scenario:
+.PP
+.PD 0
+.TP 3
+o
+open /var/mail/USERNAME
+.TP 3
+o
+attributes, such as size, inode, etc are now cached in the kernel! 
+.TP 3
+o
+meanwhile, another remote system appends data to /var/mail/USERNAME
+.TP 3
+o
+grab lock using lockfile_create()
+.TP 3
+o
+seek to end of file
+.TP 3
+o
+write data
+.PD 1
+.PP
+Now the end of the file really isn't the end of the file - the kernel
+cached the attributes on open, and st_size is not the end of the file
+anymore. So after locking the file, you need to tell the kernel to
+flush the NFS file attribute cache.
+.PP
+The only
+.I portable
+way to do this is
+the POSIX
+.I fcntl()
+file locking primitives - locking a file using
+.I fcntl()
+has the fortunate side-effect of invalidating the NFS file attribute
+cache of the kernel.
+.PP
+.B lockfile_create()
+cannot do this for you for two reasons. One, it just creates a lockfile-
+it doesn't know which file you are actually trying to lock! Two, even
+if it could deduce the file you're locking from the filename, by just
+opening and closing it, it would invalidate any existing POSIX locks the
+program might already have on that file (yes, POSIX locking semantics
+are insane!).
+.PP
+So basically what you need to do is something like this:
+.nf
+
+  fd = open("/var/mail/USER.lock");
+  .. program code ..
+
+  lockfile_create("/var/mail/USER.lock", x, y);
+
+  /* Invalidate NFS attribute cache using POSIX locks */
+  if (lockf(fd, F_TLOCK, 0) == 0) lockf(fd, F_ULOCK, 0);
+.fi
+
+You have to be careful with this if you're putting this in an existing
+program that might already be using fcntl(), flock() or lockf() locking-
+you might invalidate existing locks.
+
+.PP
+
+There is also a non-portable way. A lot of NFS operations return the
+updated attributes - and the Linux kernel actually uses these to
+update the attribute cache. One of these operations is
+.B chmod(2).
+.PP
+So stat()ing a file and then chmod()ing it to st.st_mode will not
+actually change the file, nor will it interfere with any locks on
+the file, but it will invalidate the attribute cache. The equivalent
+to use from a shell script would be
+.nf
+
+  chmod u=u /var/mail/USER
+.fi
 
 .SH PERMISSIONS
 

@@ -1,3 +1,39 @@
+liblockfile (1.03) unstable; urgency=low
+
+  * Some more manpage updates
+  * Set priority for liblockfile1 to "important" (closes: #92551)
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Fri,  6 Apr 2001 09:53:32 +0200
+
+liblockfile (1.02) unstable; urgency=low
+
+  * Maintainer upload (closes: #87488, #80753, #87670, #48886, #50564, #57890, #80601)
+  * Added section to manpages that explains that you need to flush
+    the actual file being locked after locking (closes: #43491)
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 29 Mar 2001 00:55:55 +0200
+
+liblockfile (1.01.2) unstable; urgency=low
+
+  * Non-Maintainer Upload for Bug Squashing Party.
+  * Fix typo in postrm, closes: #87670.
+  * Removed *~ from sources.
+
+ -- Jordi Mallach <jordi@debian.org>  Sat, 17 Mar 2001 05:09:54 +0100
+
+liblockfile (1.01.1) unstable; urgency=low
+
+  * NMU for bugsquashing day.
+  * Updated man pages and usr/doc dir to FHS, Closes: #80753 (serious)
+  * Only run ldconfig in postinst if the package is being configured.
+  * Run ldconfig in the postrm on removal.
+  * Fixed shlibs file perms, Closes: #50564, #57890
+  * Fixed descriptions, Closes: #80601
+  * Fixed man page typo, Closes: #48886
+  * Lintian clean except the warning about the setgid binary.
+
+ -- Joey Hess <joeyh@debian.org>  Sat, 24 Feb 2001 13:55:27 -0800
+
 liblockfile (1.01) unstable; urgency=low
 
   * Fix "clean" target in debian/rules

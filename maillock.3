@@ -1,4 +1,4 @@
-.TH MAILOCK 3  "17 April 1999" "Linux Manpage" "Linux Programmer's Manual"
+.TH MAILOCK 3  "28 March 2001" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
 maillock, mailunlock, touchlock \- manage mailbox lockfiles
 .SH SYNOPSIS
@@ -19,9 +19,9 @@ NFS-safe (or resistant) way. The algorithm is documented in
 .BR lockfile_create "(3)".
 .PP
 The mailbox is typically located in
-.B /var/spool/mail.
+.B /var/mail.
 The name of the lockfile then becomes
-.B /var/spool/mail/USERNAME.lock.
+.B /var/mail/USERNAME.lock.
 If the environment variable \fI$MAIL\fP is set, and it ends with the same
 username as the username passed to \fBmaillock\fP(), then that file
 is taken as the mailbox to lock instead.
@@ -63,9 +63,13 @@ These functions call
 to do the work. That function might spawn a set group-id executable
 to do the actual locking if the current process doesn't have enough
 priviliges.
-
+.PP
+There are some issues with flushing the kernels attribute cache if
+you are using NFS - see the
+.I lockfile_create(3)
+manpage.
 .SH FILES
-/var/spool/mail/user.lock,
+/var/mail/user.lock,
 .br
 /usr/lib/liblockfile.so.1
 
