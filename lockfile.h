@@ -21,6 +21,7 @@ int	lockfile_touch(const char *lockfile);
 #define L_TMPWRITE	3	/* Can't write pid int tmp lockfile	*/
 #define L_MAXTRYS	4	/* Failed after max. number of attempts	*/
 #define L_ERROR		5	/* Unknown error; check errno		*/
+#define L_MANLOCK	6	/* Cannot set mandatory lock on tempfile */
 
 #ifdef  __cplusplus
 }

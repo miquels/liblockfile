@@ -1,4 +1,4 @@
-.TH LOCKFILE_CREATE 3  "08 March 1998" "Linux Manpage" "Linux Programmer's Manual"
+.TH LOCKFILE_CREATE 3  "05 October 1998" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
 lockfile_create, lockfile_remove, lockfile_touch \- manage lockfiles
 .SH SYNOPSIS
@@ -8,9 +8,9 @@ lockfile_create, lockfile_remove, lockfile_touch \- manage lockfiles
 .sp
 .BI "int lockfile_create( const char *" lockfile ", int " retrycnt " );"
 .br
-.BI "void lockfile_remove( const char *" lockfile " );"
+.BI "int lockfile_remove( const char *" lockfile " );"
 .br
-.BI "void lockfile_touch( const char *" lockfile " );"
+.BI "int lockfile_touch( const char *" lockfile " );"
 .SH DESCRIPTION
 The
 .B lockfile_create
@@ -41,7 +41,12 @@ returns one of the following status codes:
    #define L_ERROR     5    /* Unknown error; check errno           */
 
 .fi
-
+.B lockfile_touch
+and
+.B lockfile_remove
+return 0 on success. On failure -1 is returned and
+.I errno
+is set appropriately.
 .SH FILES
 /usr/lib/liblockfile.so.0
 

@@ -1,3 +1,20 @@
+liblockfile (0.1-6) frozen unstable; urgency=high
+
+  * Fixed libnfslock to work together with mutt's mutt_dotlock.
+    This has high urgency because otherwise mutt won't be able
+    to lock your mailbox 95% of the time.
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Wed,  2 Dec 1998 17:39:54 +0100
+
+liblockfile (0.1-5) unstable; urgency=low
+
+  * Added L_MANLOCK define for compatibility , it's not actually used.
+  * Fixes bugs:
+    #21925 liblockfile man page is inaccurate
+    #27275 liblockfile0: wishlist "user" argument for mailunlock and touchlock.
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Mon,  5 Oct 1998 12:35:42 +0200
+
 liblockfile (0.1-4) unstable; urgency=low
 
   * Fixes:

@@ -9,7 +9,7 @@
  *
  *		To compile: cc -fPIC -shared -o nfslock.so nfslock.c
  *
- * Version:	@(#)nfslock.c  1.10  06-Jul-1997  miquels@cistron.nl
+ * Version:	@(#)nfslock.c  1.20  30-Nov-1998  miquels@cistron.nl
  *
  */
 
@@ -19,6 +19,7 @@
 #include <sys/utsname.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 extern int __libc_open(const char *, int, ...);
@@ -108,6 +109,11 @@ static int istmplock(const char *file)
 			if (i > 0) return 1;
 		}
 	}
+
+	/* Mutt. */
+	if ((s = strrchr(p, '.')) != NULL && s[1] >= '0' && s[1] <= '9')
+		if (atoi(s+1) == getpid())
+			return 1;
 
 	/* Doesn't look like a temp lockfile */
 	return 0;
