@@ -3,9 +3,9 @@
  *			Runs setgid mail so is able to lock mailboxes
  *			as well. Liblockfile can call this command.
  *
- * Version:	@(#)dotlockfile.c  1.0  10-Jun-1999  miquels@cistron.nl
+ * Version:	@(#)dotlockfile.c  1.1  15-May-2003  miquels@cistron.nl
  *
- *		Copyright (C) Miquel van Smoorenburg 1999.
+ *		Copyright (C) Miquel van Smoorenburg 1999,2003
  *
  *		This program is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU General Public License
@@ -100,11 +100,16 @@ int ismaillock(char *lockfile, char *username)
 /*
  *	Split a filename up in  file and directory.
  */
-void fn_split(char *fn, char **fn_p, char **dir_p)
+int fn_split(char *fn, char **fn_p, char **dir_p)
 {
-	static char	buf[MAXPATHLEN];
+	static char	*buf = NULL;
 	char		*p;
 
+	if (buf)
+		free (buf);
+	buf = (char *) malloc (strlen (fn) + 1);
+	if (! buf)
+		return L_ERROR;
 	strcpy(buf, fn);
 	if ((p = strrchr(buf, '/')) != NULL) {
 		*p++   = 0;
@@ -114,6 +119,7 @@ void fn_split(char *fn, char **fn_p, char **dir_p)
 		*fn_p  = fn;
 		*dir_p = ".";
 	}
+	return L_SUCCESS;
 }
 
 
@@ -122,13 +128,24 @@ void fn_split(char *fn, char **fn_p, char **dir_p)
  */
 char *mlockname(char *user)
 {
-	static char	buf[MAXPATHLEN];
+	static char	*buf = NULL;
 	char		*e;
 
-	if ((e = getenv("MAIL")) != NULL && strlen(e) + 6 < MAXPATHLEN)
+	if (buf)
+		free(buf);
+
+	e = getenv("MAIL");
+	if (e) {
+		buf = (char *)malloc(strlen(e)+6);
+		if (!buf)
+			return NULL;
 		sprintf(buf, "%s.lock", e);
-	else
-		sprintf(buf, "%s%.120s.lock", MAILDIR, user);
+	} else {
+		buf = (char *)malloc(strlen(MAILDIR)+strlen(user)+6);
+		if (!buf)
+			return NULL;
+		sprintf(buf, "%s%s.lock", MAILDIR, user);
+	}
 	return buf;
 }
 
@@ -155,6 +172,7 @@ int main(int argc, char **argv)
 	int		unlock = 0;
 	int		check = 0;
 	int		quiet = 0;
+	int		touch = 0;
 
 	/*
 	 *	Get username for mailbox-locks.
@@ -167,7 +185,7 @@ int main(int argc, char **argv)
 	/*
 	 *	Process the options.
 	 */
-	while ((c = getopt(argc, argv, "qpNr:mlu")) != EOF) switch(c) {
+	while ((c = getopt(argc, argv, "qpNr:mluct")) != EOF) switch(c) {
 		case 'q':
 			quiet = 1;
 			break;
@@ -179,9 +197,18 @@ int main(int argc, char **argv)
 			break;
 		case 'r':
 			retries = atoi(optarg);
+			if (retries <= 0 && strcmp(optarg, "0") != 0) {
+				fprintf(stderr,
+				    "dotlockfile: -r: need argument >= 0\n");
+				return L_ERROR;
+			}
 			break;
 		case 'm':
 			lockfile = mlockname(pwd->pw_name);
+			if (!lockfile) {
+				perror("dotlockfile");
+				return L_ERROR;
+			}
 			break;
 		case 'l':
 			/* default: lock */
@@ -191,6 +218,9 @@ int main(int argc, char **argv)
 			break;
 		case 'c':
 			check = 1;
+			break;
+		case 't':
+			touch = 1;
 			break;
 		default:
 			usage();
@@ -205,15 +235,22 @@ int main(int argc, char **argv)
 		if (optind != argc - 1) usage();
 		lockfile = argv[optind];
 	}
+
+#ifdef MAXPATHLEN
 	if (strlen(lockfile) >= MAXPATHLEN) {
 		fprintf(stderr, "dotlockfile: %s: name too long\n", lockfile);
 		return L_NAMELEN;
 	}
+#endif
 
 	/*
 	 *	See if we can write into the lock directory.
 	 */
-	fn_split(lockfile, &file, &dir);
+	r = fn_split(lockfile, &file, &dir);
+	if (r != L_SUCCESS) {
+		perror("dotlockfile");
+		return L_ERROR;
+	}
 	gid = getgid();
 	if (eaccess(dir, gid, &st) < 0) {
 		if (errno == ENOENT) {
@@ -252,7 +289,13 @@ enoent:
 	 *	Simple check for a valid lockfile ?
 	 */
 	if (check)
-		return (lockfile_check(file, flags) < 0) ? 0 : 1;
+		return (lockfile_check(file, flags) < 0) ? 1 : 0;
+
+	/*
+	 *	Touch lock ?
+	 */
+	if (touch)
+		return (lockfile_touch(file) < 0) ? 1 : 0;
 
 	/*
 	 *	Remove lockfile?

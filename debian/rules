@@ -11,13 +11,15 @@ SOVER	= 1.0
 
 tmp	= debian/tmp
 
-build:
+build:	config.status
 	$(checkdir)
-	./configure --enable-shared --prefix=/usr \
-		--with-mailgroup --mandir=/usr/share/man
 	make
 	touch build
 
+config.status:
+	./configure --enable-shared --prefix=/usr \
+		--with-mailgroup --mandir=/usr/share/man
+	
 clean:
 	[ ! -f Makefile ] || make distclean
 	-rm -rf build $(tmp)* debian/files debian/substvars
@@ -69,14 +71,20 @@ binary-arch: checkroot
 	#
 	install -o root -m 644 lockfile.h maillock.h $(tmp)/usr/include
 	ln -s liblockfile.so.$(SOVER) $(tmp)/usr/lib/liblockfile.so
+	install -o root -m 644 liblockfile.a $(tmp)/usr/lib
 	install -o root -m 644 maillock.3 $(tmp)/usr/share/man/man3
 	install -o root -m 644 lockfile_create.3 $(tmp)/usr/share/man/man3
+	gzip -9f $(tmp)/usr/share/man/*/*
+	ln -sf lockfile_create.3.gz $(tmp)/usr/share/man/man3/lockfile_check.3.gz
+	ln -sf lockfile_create.3.gz $(tmp)/usr/share/man/man3/lockfile_touch.3.gz
+	ln -sf lockfile_create.3.gz $(tmp)/usr/share/man/man3/lockfile_remove.3.gz
+	ln -sf maillock.3.gz $(tmp)/usr/share/man/man3/mailunlock.3.gz
+	ln -sf maillock.3.gz $(tmp)/usr/share/man/man3/touchlock.3.gz
 	install -o root -m 644 debian/changelog \
 		$(tmp)/usr/share/doc/liblockfile-dev/changelog
 	gzip -9f $(tmp)/usr/share/doc/liblockfile-dev/*
 	install -o root -m 644 COPYRIGHT \
 		$(tmp)/usr/share/doc/liblockfile-dev/copyright
-	gzip -9f $(tmp)/usr/share/man/*/*
 	install -o root -m 755 debian/postinst.liblockfile-dev \
 		$(tmp)/DEBIAN/postinst
 	install -o root -m 755 debian/prerm.liblockfile-dev \

@@ -1,3 +1,43 @@
+liblockfile (1.06) unstable; urgency=low
+
+  * Fix manpage - fd = open("/var/mail/USER.lock") should be
+    fd = open("/var/mail/USER");
+  * Remove extraneous free() from lockfile.c (closes: #217740)
+  * If the existing lockfile is not valid, the first try isn't really
+    valid either - in that case, even if we want to try locking just
+    once, try once more.  (closes: #217741)
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Fri,  4 Jun 2004 17:16:04 +0200
+
+liblockfile (1.05) unstable; urgency=low
+
+  * Fix "does not give a valid preprocessing token" cpp problem
+    (closes: #194823)
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Mon,  2 Jun 2003 14:27:58 +0200
+
+liblockfile (1.04) unstable; urgency=low
+
+  * Dynamically allocate filename memory, do not use
+    MAXPATHLEN sized static buffers (closes: #144129, #105973)
+  * Make the '-c' option of dotlockfile(1) actually work (closes: #103998)
+  * Dotlockfile '-r' arg error checking
+  * Note in manpages that unlocking a non-existant file is not an error.
+  * Note in dotlockfile manpage that the lockfile_create manpage
+    is in the liblockfile-dev package.
+  * Update COPYRIGHT file (closes: #178200)
+  * Don't sleep for 5 seconds when we removed an invalid lockfile
+    (closes: #131316)
+  * This upload will force a rebuild with current binutils (closes: #176340)
+  * Add symlinks for manpages (closes: #99546)
+  * Add static library liblockfile.a to liblockfile-dev (closes: #183817)
+  * Actually handle 'retries' as number of *re*tries everywhere,
+    not the number of tries.
+  * Document that the default number of retries in dotlockfile is 5.
+  * Add a '-t' (touchlock) option to dotlockfile (closes: #41791)
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 15 May 2003 16:29:32 +0200
+
 liblockfile (1.03) unstable; urgency=low
 
   * Some more manpage updates

@@ -1,4 +1,4 @@
-.TH LOCKFILE_CREATE 3  "29 March 2001" "Linux Manpage" "Linux Programmer's Manual"
+.TH LOCKFILE_CREATE 3  "04 June 2004" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
 lockfile_create, lockfile_remove, lockfile_touch, lockfile_check \- manage lockfiles
 .SH SYNOPSIS
@@ -66,7 +66,8 @@ and
 .B lockfile_remove
 return 0 on success. On failure -1 is returned and
 .I errno
-is set appropriately.
+is set appropriately. It is not an error to lockfile_remove()
+a non-existing lockfile.
 
 .SH ALGORITHM
 The algorithm that is used to create a lockfile in an atomic way,
@@ -160,7 +161,7 @@ are insane!).
 So basically what you need to do is something like this:
 .nf
 
-  fd = open("/var/mail/USER.lock");
+  fd = open("/var/mail/USER");
   .. program code ..
 
   lockfile_create("/var/mail/USER.lock", x, y);

@@ -21,7 +21,7 @@ extern "C" {
 @PATHMAILDIR@
 #endif
 
-#define MAILDIR		_PATH_MAILDIR ## "/"
+#define MAILDIR		(_PATH_MAILDIR "/")
 
 /*
  *	Prototypes.

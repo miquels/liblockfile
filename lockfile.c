@@ -3,9 +3,9 @@
  *		This file also holds the implementation for
  *		the Svr4 maillock functions.
  *
- * Version:	@(#)lockfile.c  1.0  05-Jun-1999  miquels@cistron.nl
+ * Version:	@(#)lockfile.c  1.06  04-Jun-2004  miquels@cistron.nl
  *
- *		Copyright (C) Miquel van Smoorenburg 1997,1998,1999.
+ *		Copyright (C) Miquel van Smoorenburg 1997,1998,1999,2004.
  *
  *		This library is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU Library General Public
@@ -37,7 +37,7 @@
 #endif
 
 #ifdef LIB
-static char mlockfile[MAXPATHLEN];
+static char *mlockfile;
 static int  islocked = 0;
 #endif
 
@@ -82,20 +82,24 @@ static int need_extern(const char *file)
 	gid_t		egid = getegid();
 	struct stat	st;
 	static gid_t	mailgid = -1;
-	char		dir[MAXPATHLEN];
+	char		*dir;
 	char		*p;
+	int             ret;
 
 	/*
 	 *	Find directory.
 	 */
+	if ((dir = (char *)malloc(strlen(file) + 1)) == NULL)
+		return L_ERROR;
 	strcpy(dir, file);
 	if ((p = strrchr(dir, '/')) != NULL)
 		*p = 0;
 	else
 		strcpy(dir, ".");
-
-	if (eaccess(dir, egid, NULL) >= 0)
+	if (eaccess(dir, egid, NULL) >= 0) {
+		free(dir);
 		return 0;
+	}
 
 	/*
 	 *	See if accessible for group mail. We find out what
@@ -107,7 +111,9 @@ static int need_extern(const char *file)
 			return 0;
 		mailgid = st.st_gid;
 	}
-	return (eaccess(dir, mailgid, NULL) >= 0);
+	ret = eaccess(dir, mailgid, NULL) >= 0;
+	free (dir);
+	return ret;
 }
 
 /*
@@ -167,15 +173,18 @@ static int do_extern(char *opt, const char *lockfile, int retries, int flags)
 int lockfile_create(const char *lockfile, int retries, int flags)
 {
 	struct stat	st, st1;
-	char		tmplock[MAXPATHLEN];
+	char		*tmplock;
 	char		sysname[256];
 	char		buf[8];
 	char		*p;
-	int		sleeptime = 5;
+	int		sleeptime = 0;
 	int		statfailed = 0;
 	int		fd;
 	int		i, e, len;
+	int		dontsleep = 1;
+	int		tries = retries + 1;
 
+#ifdef MAXPATHLEN
 	/*
 	 *	Safety measure.
 	 */
@@ -183,6 +192,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		errno = ENAMETOOLONG;
 		return L_ERROR;
 	}
+#endif
 
 #if defined(LIB) && defined(MAILGROUP)
 	if (need_extern(lockfile))
@@ -197,6 +207,8 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		return L_ERROR;
 	if ((p = strchr(sysname, '.')) != NULL)
 		*p = 0;
+	if ((tmplock = (char *)malloc(strlen(lockfile)+32+1)) == NULL)
+		return L_ERROR;
 	strcpy(tmplock, lockfile);
 	if ((p = strrchr(tmplock, '/')) == NULL)
 		p = tmplock;
@@ -209,6 +221,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 	e = errno;
 	umask(i);
 	if (fd < 0) {
+		free (tmplock);
 		errno = e;
 		return L_TMPLOCK;
 	}
@@ -229,6 +242,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 	}
 	if (i != len) {
 		unlink(tmplock);
+		free (tmplock);
 		errno = i < 0 ? e : EAGAIN;
 		return L_TMPWRITE;
 	}
@@ -236,18 +250,24 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 	/*
 	 *	Now try to link the temporary lock to the lock.
 	 */
-	for (i = 0; i < retries && retries > 0; i++) {
+	for (i = 0; i < tries && tries > 0; i++) {
 
-		sleeptime = i > 12 ? 60 : 5 * i;
-		if (sleeptime > 0)
+		if (!dontsleep) {
+			sleeptime += 5;
+			if (sleeptime > 60) sleeptime = 60;
 #ifdef LIB
 			sleep(sleeptime);
 #else
 			if ((e = check_sleep(sleeptime)) != 0) {
 				unlink(tmplock);
+				free (tmplock);
 				return e;
 			}
 #endif
+		}
+		dontsleep = 0;
+
+
 		/*
 		 *	Now lock by linking the tempfile to the lock.
 		 *
@@ -258,8 +278,12 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		 */
 		(void)link(tmplock, lockfile);
 
-		if (lstat(tmplock, &st1) < 0)
+		if (lstat(tmplock, &st1) < 0) {
+			e = errno;
+			free (tmplock);
+			errno = e;
 			return L_ERROR; /* Can't happen */
+		}
 
 		if (lstat(lockfile, &st) < 0) {
 			if (statfailed++ > 5) {
@@ -271,6 +295,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 				 */
 				e = errno;
 				(void)unlink(tmplock);
+				free (tmplock);
 				errno = e;
 				return L_MAXTRYS;
 			}
@@ -283,6 +308,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		if (st.st_rdev == st1.st_rdev &&
 		    st.st_ino  == st1.st_ino) {
 			(void)unlink(tmplock);
+			free (tmplock);
 			return L_SUCCESS;
 		}
 		statfailed = 0;
@@ -291,11 +317,20 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		 *	If there is a lockfile and it is invalid,
 		 *	remove the lockfile.
 		 */
-		if (lockfile_check(lockfile, flags) == -1)
+		if (lockfile_check(lockfile, flags) == -1) {
 			unlink(lockfile);
+			dontsleep = 1;
+			/*
+			 *	If the lockfile was invalid, then the first
+			 *	try wasn't valid either - make sure we
+			 *	try at least once more.
+			 */
+			if (tries == 1) tries++;
+		}
 
 	}
 	(void)unlink(tmplock);
+	free (tmplock);
 	errno = EAGAIN;
 	return L_MAXTRYS;
 }
@@ -386,18 +421,28 @@ int lockfile_touch(const char *lockfile)
 int maillock(const char *name, int retries)
 {
 	char		*p, *mail;
-	int		i;
+	char		*newlock;
+	int		i, e;
+	int             len, newlen;
 
 	if (islocked) return 0;
+
+#ifdef MAXPATHLEN
 	if (strlen(name) + sizeof(MAILDIR) + 6 > MAXPATHLEN) {
 		errno = ENAMETOOLONG;
 		return L_NAMELEN;
 	}
+#endif
 
 	/*
 	 *	If $MAIL is for the same username as "name"
 	 *	then use $MAIL instead.
 	 */
+
+	len = strlen(name)+strlen(MAILDIR)+6;
+	mlockfile = (char *)malloc(len);
+	if (!mlockfile)
+		return L_ERROR;
 	sprintf(mlockfile, "%s%s.lock", MAILDIR, name);
 	if ((mail = getenv("MAIL")) != NULL) {
 		if ((p = strrchr(mail, '/')) != NULL)
@@ -405,9 +450,23 @@ int maillock(const char *name, int retries)
 		else
 			p = mail;
 		if (strcmp(p, name) == 0) {
-			if (strlen(mail) + 6 > MAXPATHLEN) {
+			newlen = strlen(mail)+6;
+#ifdef MAXPATHLEN
+			if (newlen > MAXPATHLEN) {
 				errno = ENAMETOOLONG;
 				return L_NAMELEN;
+			}
+#endif
+			if (newlen > len) {
+				newlock = (char *)realloc (mlockfile, newlen);
+				if (newlock == NULL) {
+					e = errno;
+					free (mlockfile);
+					mlockfile = NULL;
+					errno = e;
+					return L_ERROR;
+				}
+				mlockfile = newlock;
 			}
 			sprintf(mlockfile, "%s.lock", mail);
 		}
@@ -422,6 +481,7 @@ void mailunlock(void)
 {
 	if (!islocked) return;
 	lockfile_remove(mlockfile);
+	free (mlockfile);
 	islocked = 0;
 }
 

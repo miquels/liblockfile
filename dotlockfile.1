@@ -1,4 +1,4 @@
-.TH DOTLOCKFILE 1 "05 June 1999" "" "Cistron Utilities"
+.TH DOTLOCKFILE 1 "15 May 2003" "" "Cistron Utilities"
 .SH NAME
 dotlockfile \- Utility to manage lockfiles
 .SH SYNOPSIS
@@ -7,15 +7,15 @@ dotlockfile \- Utility to manage lockfiles
 .RB [ \-c ]
 .RB [ \-u ]
 .RB [ \-m ]
-.RB [ \-l|\-u ]
+.RB [ \-l|\-u|\-t ]
 .RB [ \-r
 .IR retries ]
 .RB [ lockfile]
 .SH DESCRIPTION
 \fBDotlockfile\fP is a command line utility to safely create, test and
 remove lockfiles. Lockfiles are created in an NFS-safe way. \fBDotlockfile\fP
-can lock and unlock mailboxes even if the mailspool directory is only
-writable by group mail.
+can can also be used to lock and unlock mailboxes even if the mailspool
+directory is only writable by group mail.
 .PP
 The name \fBdotlockfile\fP comes from the way mailboxes are locked for updates
 on a lot of UNIX systems. A lockfile is created with the same filename
@@ -30,15 +30,18 @@ Create a lockfile. This is the default.
 Remove a lockfile.
 .IP "\fB\-c\fP"
 Check for the existence of a \fBvalid\fP lockfile.
+.IP "\fB\-t\fP"
+Touch an existing lockfile (update the timestamp).
 .IP "\fB\-p\fP"
 Write the \fIprocess-id\fP of the calling process into the lockfile. Also
 when testing for an existing lockfile, check the contents for a process-id
 to find out if the lockfile is still valid.
 .IP "\fB\-r retries\fP"
-The number of times \fBdotlockfile\fP tries to acquire the lock before giving
-up. The initial sleep after failing to acquire the lock is 5 seconds.
-After each next try, a sleep of 5 seconds \fIextra\fP occurs up to a
-maximum sleep of 60 seconds between tries.
+The number of times \fBdotlockfile\fP retries to acquire the lock if it
+failed the first time before giving up. The initial sleep after failing
+to acquire the lock is 5 seconds. After each next try, a sleep of 5
+seconds \fIextra\fP occurs up to a maximum sleep of 60 seconds between tries.
+The default number of retries is 5.
 .IP "\fB\-m\fP"
 Lock or unlock the current users mailbox. The path to the mailbox is the
 default system mailspool directory (usually \fI/var/mail\fP) with the
@@ -53,7 +56,8 @@ The lockfile to be created/removed, unless the \fB-m\fP option is in effect.
 Zero on success, and non-zero on failure. For the \fB-c\fP option,
 sucess means that a valid lockfile is already present. When locking
 (the default, or the \fB-l\fP option) \fBdotlockfile\fP returns the same
-values as the library function \fIlockfile_create\fP(3).
+values as the library function \fIlockfile_create\fP(3). Unlocking
+a non-existant lockfile is not an error.
 
 .SH NOTES
 
@@ -66,6 +70,9 @@ This utility is a lot like the \fIlockfile\fP(1) utility included with
 return status. It is believed that \fIdotlockfile\fP is the most flexible
 implementation, since it automatically detects when it needs to use
 priviliges to lock a mailbox, and does it safely.
+.PP
+The above mentioned \fIlockfile_create\fP(3) manpage is present
+in the \fIliblockfile-dev\fP package.
 
 .SH BUGS
 
