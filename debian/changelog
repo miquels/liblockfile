@@ -1,0 +1,46 @@
+liblockfile (0.1-4) unstable; urgency=low
+
+  * Fixes:
+    #13974: liblockfile-dev: maillock(3) mentions other manpages, that are not
+    #18521: liblockfile-dev should not include /usr/lib/liblockfile.so
+    #19042: liblockfile-dev: Overlap with liblockfile0
+    #18527: liblockfile0: liblockfile0 include .so link in liblockfile-dev
+    #19041: liblockfile0: Overlap with liblockfle-dev and no conflict
+    #19108: liblockfile0 has incorrect shlibs listed
+    #18607: libnfslock: postinst and prerm scripts fail if ld.so.preload only
+    #18913: libnfslock: package description
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Sun,  8 Mar 1998 22:41:49 +0100
+
+liblockfile (0.1-3) unstable; urgency=low
+
+  * Added version in name for nfslock.so (now nfslock.so.0.1)
+  * Added shlibs file for nfslock
+  * Add missing symlinks
+    Fixes:
+    #14413: /usr/doc/$(PACKAGE)/copyright should not be compressed
+    #17693: liblockfile0 has executabnle changelog.gz
+    #16489: liblockfile0 lacks dependency information
+    #14155: lockfile_create could ignore some errors
+    #14423: /usr/doc/$(PACKAGE)/copyright should not be compressed
+    #15220: liblockfile-dev changelog is executable
+    #14412: /usr/doc/$(PACKAGE)/copyright should not be compressed
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 19 Feb 1998 23:15:01 +0100
+
+liblockfile (0.1-2) unstable; urgency=low
+
+  * Compiled with libc6 and with -lc
+  * Compile with -D_REENTRANT and -D_GNU_SOURCE
+  * Apart from returning the L_XXX values, also set errno to something
+    resonable.
+  * Reckognize common NFS lockfiles from mailx
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Wed, 24 Sep 1997 12:52:44 +0200
+
+liblockfile (0.1-1) unstable; urgency=low
+
+  * First Debian release.
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Sun, 6 Jul 1997 16:04:55 +0200
+

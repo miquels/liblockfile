@@ -1,0 +1,101 @@
+#! /usr/bin/make -f
+#
+
+MVER	= 0
+SOVER	= 0.1
+
+tmp	= debian/tmp
+
+build:
+	$(checkdir)
+	make
+	touch build
+
+clean:
+	$(checkdir)
+	make clean
+	-rm -rf build $(tmp)* debian/files debian/substvars
+
+binary-indep: checkroot
+	$(checkdir)
+
+binary-arch: checkroot
+	$(checkdir)
+	#
+	#	First, liblockfile.so.0
+	#
+	-rm -rf $(tmp)*
+	install -d -o root -m 755 $(tmp)
+	install -d -o root -m 755 $(tmp)/DEBIAN
+	install -d -o root -m 755 $(tmp)/usr/lib
+	install -d -o root -m 755 $(tmp)/usr/doc/liblockfile0
+	#
+	install -o root -m 755 debian/postinst $(tmp)/DEBIAN
+	install -o root -m 755 debian/shlibs $(tmp)/DEBIAN
+	install -o root -m 644 -s liblockfile.so.$(SOVER) $(tmp)/usr/lib
+	ln -s liblockfile.so.$(SOVER) $(tmp)/usr/lib/liblockfile.so.$(MVER)
+	install -o root -m 644 debian/changelog \
+		$(tmp)/usr/doc/liblockfile0/changelog
+	gzip -9f $(tmp)/usr/doc/liblockfile0/*
+	install -o root -m 644 COPYRIGHT \
+		$(tmp)/usr/doc/liblockfile0/copyright
+	dpkg-shlibdeps liblockfile.so.$(SOVER)
+	dpkg-gencontrol -pliblockfile0 -P$(tmp)
+	dpkg --build $(tmp) ..
+	#
+	#	Now build liblockfile-dev
+	#
+	-rm -rf $(tmp)*
+	install -d -o root -m 755 $(tmp)
+	install -d -o root -m 755 $(tmp)/DEBIAN
+	install -d -o root -m 755 $(tmp)/usr/lib
+	install -d -o root -m 755 $(tmp)/usr/include
+	install -d -o root -m 755 $(tmp)/usr/man/man3
+	install -d -o root -m 755 $(tmp)/usr/doc/liblockfile-dev
+	#
+	install -o root -m 644 lockfile.h maillock.h $(tmp)/usr/include
+	ln -s liblockfile.so.$(SOVER) $(tmp)/usr/lib/liblockfile.so
+	install -o root -m 644 maillock.3 $(tmp)/usr/man/man3
+	install -o root -m 644 lockfile_create.3 $(tmp)/usr/man/man3
+	install -o root -m 644 debian/changelog \
+		$(tmp)/usr/doc/liblockfile-dev/changelog
+	gzip -9f $(tmp)/usr/doc/liblockfile-dev/*
+	install -o root -m 644 COPYRIGHT \
+		$(tmp)/usr/doc/liblockfile-dev/copyright
+	gzip -9f $(tmp)/usr/man/*/*
+	dpkg-gencontrol -pliblockfile-dev -P$(tmp)
+	dpkg --build $(tmp) ..
+	#
+	#	Finally, build libnfslock.
+	#
+	-rm -rf $(tmp)*
+	install -d -o root -m 755 $(tmp)
+	install -d -o root -m 755 $(tmp)/DEBIAN
+	install -d -o root -m 755 $(tmp)/lib
+	install -d -o root -m 755 $(tmp)/usr/doc/libnfslock
+	#
+	install -o root -m 755 debian/shlibs.nfslock $(tmp)/DEBIAN/shlibs
+	install -o root -m 755 debian/postinst.nfs $(tmp)/DEBIAN/postinst
+	install -o root -m 755 debian/prerm.nfs $(tmp)/DEBIAN/prerm
+	install -o root -m 644 nfslock.so.$(SOVER) $(tmp)/lib
+	ln -s nfslock.so.$(SOVER) $(tmp)/lib/nfslock.so.$(MVER)
+	ln -s nfslock.so.$(SOVER) $(tmp)/lib/nfslock.so
+	install -o root -m 644 debian/changelog \
+		$(tmp)/usr/doc/libnfslock/changelog
+	gzip -9f $(tmp)/usr/doc/libnfslock/*
+	install -o root -m 644 COPYRIGHT \
+		$(tmp)/usr/doc/libnfslock/copyright
+	dpkg-gencontrol -plibnfslock -P$(tmp)
+	dpkg --build $(tmp) ..
+
+define checkdir
+	test -f lockfile.c -a -f debian/rules
+endef
+
+binary: binary-indep binary-arch
+
+checkroot:
+	$(checkdir)
+	test root = "`whoami`"
+
+.PHONY: config build clean binary binary-arch binary-indep

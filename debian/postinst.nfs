@@ -1,0 +1,42 @@
+#! /bin/sh
+#
+#	Add a line to /etc/ld.so.preload, or update the existing one.
+#
+
+if [ "$1" != configure ]
+then
+	exit 0
+fi
+
+set -e
+umask 022
+ldconfig
+
+if [ ! -f /lib/nfslock.so.0 ]
+then
+	echo "preinst.libnfslock: /lib/nfslock.so.0 not found!" >&2
+	exit 1
+fi
+
+cd /etc
+set +e
+grep -q '^/lib/nfslock\.so\.0$' ld.so.preload && exit 0
+set -e
+
+if [ -f ld.so.preload ]
+then
+	cp -a ld.so.preload ld.so.preload.new
+	(
+		#
+		#	Careful here - grep -v might exit with value 1
+		#	which would cause the script to abort.
+		#
+		set +e
+		grep -v '^/lib/nfslock\.so' ld.so.preload
+		set -e
+	) > ld.so.preload.new
+fi
+echo "/lib/nfslock.so.0" >> ld.so.preload.new
+mv ld.so.preload.new ld.so.preload
+
+exit 0

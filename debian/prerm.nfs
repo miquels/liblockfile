@@ -1,0 +1,31 @@
+#! /bin/sh
+#
+#	Remove nfslock.so from /etc/ld.so.preload
+#
+
+if [ "$1" != "remove" ]
+then
+	exit 0
+fi
+
+set -e
+
+if [ ! -f /etc/ld.so.preload ]
+then
+	exit 0
+fi
+
+cp -a /etc/ld.so.preload /etc/ld.so.preload.new
+(
+	set +e
+	grep -v "^/lib/nfslock\.so" /etc/ld.so.preload
+	set -e
+) > /etc/ld.so.preload.new
+
+mv /etc/ld.so.preload.new /etc/ld.so.preload
+
+if [ ! -s /etc/ld.so.preload ]
+then
+	rm -f /etc/ld.so.preload
+fi
+
