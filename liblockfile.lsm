@@ -1,0 +1,22 @@
+Begin3
+Title:		liblockfile - a lockfile library
+Version:	1.01
+Entered-Date:	20JUN1999
+Description:	liblockfile is a library that contains NFS-safe locking
+		functions. It also contains an implementation of the SVR4
+		maillock() functions. The functions in liblockfile can
+		lock and unlock mailboxes even if special priviliges are
+		needed by calling an external setgid-mail utility called
+		`dotlockfile'. That utility can also be used stand-alone.
+		The source package has the debian build files included.
+		This version can be compiled with glibc 2.0.6 and up.
+Author:		miquels@cistron.nl (Miquel van Smoorenburg)
+Primary-Site:	metalab.unc.edu /pub/Linux/libs
+		28K liblockfile-1.01.tar.gz
+Alternate-Site:	ftp.cistron.nl /pub/people/miquels/software
+		28K liblockfile-1.01.tar.gz
+Alternate-Site:	ftp.debian.org /debian/dists/potato/main/source/libs
+		28K liblockfile_1.01.tar.gz
+Copying-Policy:	LGPL,GPL
+Keywords:	locking mail dotlock dotlockfile library
+End

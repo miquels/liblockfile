@@ -13,6 +13,8 @@
  *
  */
 
+#include "autoconf.h"
+
 #include <fcntl.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -21,6 +23,10 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#ifndef __linux__
+#  error This is really only meant for Linux systems, sorry.
+#endif
 
 extern int __libc_open(const char *, int, ...);
 static struct utsname uts;
@@ -49,7 +55,7 @@ static int is_nfs(const char *file)
 
 /*
  *	See if this is a temporary file of Exim/procmail/qpopper.
- *	In that case, we do nut run the special algorithm.
+ *	In that case, we do not run the special algorithm.
  */
 static int istmplock(const char *file)
 {

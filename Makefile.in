@@ -1,0 +1,81 @@
+#
+# Makefile.in	Makefile for the liblockfile package
+#
+# version:	@(#)Makefile.in  1.01  16-Apr-1999  miquels@cistron.nl
+#
+
+VER	= 1.0
+NVER	= 0.1
+
+CFLAGS		= @CFLAGS@ -I.
+LDFLAGS		= @LDFLAGS@
+CC		= @CC@
+
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+bindir		= @bindir@
+libdir		= @libdir@
+mandir		= @mandir@
+nfslockdir	= @nfslockdir@
+includedir	= @includedir@
+
+MAILGROUP	= @MAILGROUP@
+
+all:		@TARGETS@
+install:	@INSTALL_TARGETS@
+
+static:		liblockfile.a dotlockfile
+shared:		liblockfile.so dotlockfile
+nfslib:		nfslock.so.$(VER)
+
+liblockfile.a:	lockfile.o
+		ar rv liblockfile.a lockfile.o
+
+liblockfile.so: liblockfile.a
+		$(CC) -fPIC -shared -Wl,-soname,liblockfile.so.1 \
+			-o liblockfile.so lockfile.o -lc
+
+nfslock.so.$(VER):	nfslock.o
+		$(CC) -fPIC -shared -Wl,-soname,nfslock.so.0 \
+			-o nfslock.so.$(NVER) nfslock.o
+
+dotlockfile:	dotlockfile.o xlockfile.o
+		$(CC) $(LDFLAGS) -o dotlockfile dotlockfile.o xlockfile.o
+
+lockfile.o:	lockfile.c
+		$(CC) $(CFLAGS) -DLIB -DLOCKPROG=\"$(bindir)/dotlockfile\" \
+			-c lockfile.c
+
+xlockfile.o:	lockfile.c
+		$(CC) $(CFLAGS) -c lockfile.c -o xlockfile.o
+
+install_static:	static install_common
+		install -m 644 liblockfile.a $(ROOT)$(libdir)
+
+install_shared:	shared install_common
+		install -m 755 liblockfile.so \
+			$(ROOT)$(libdir)/liblockfile.so.$(VER)
+		ln -s liblockfile.so.$(VER) $(ROOT)$(libdir)/liblockfile.so
+		if test "$(ROOT)" = ""; then @LDCONFIG@; fi
+
+install_common:
+		install -m 644 lockfile.h maillock.h $(ROOT)$(includedir)
+		if [ "$(MAILGROUP)" != "" ]; then\
+		  install -g $(MAILGROUP) -m 2755 dotlockfile $(ROOT)$(bindir);\
+		else \
+		  install -g root -m 755 dotlockfile $(ROOT)$(bindir); \
+		fi
+		install -m 644 *.1 $(ROOT)$(mandir)/man1
+		install -m 644 *.3 $(ROOT)$(mandir)/man3
+
+install_nfslib:	nfslib
+		install -m 755 nfslock.so.$(VER) $(ROOT)$(nfslockdir)
+		if test "$(ROOT)" = ""; then @LDCONFIG@; fi
+
+clean:
+		rm -f *.a *.o *.so *.so.* dotlockfile
+
+distclean:	clean
+		rm -f Makefile autoconf.h maillock.h \
+			config.cache config.log config.status
+

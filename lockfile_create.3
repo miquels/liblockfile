@@ -1,28 +1,44 @@
-.TH LOCKFILE_CREATE 3  "05 October 1998" "Linux Manpage" "Linux Programmer's Manual"
+.TH LOCKFILE_CREATE 3  "17 April 1999" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
-lockfile_create, lockfile_remove, lockfile_touch \- manage lockfiles
+lockfile_create, lockfile_remove, lockfile_touch, lockfile_check \- manage lockfiles
 .SH SYNOPSIS
 .B #include <lockfile.h>
 .sp
 .BI "cc [ "flag " ... ] "file " ... -llockfile [ "library " ] "
 .sp
-.BI "int lockfile_create( const char *" lockfile ", int " retrycnt " );"
+.BI "int lockfile_create( const char *" lockfile ", int " retrycnt ", int " flags " );"
 .br
 .BI "int lockfile_remove( const char *" lockfile " );"
 .br
 .BI "int lockfile_touch( const char *" lockfile " );"
+.br
+.BI "int lockfile_check( const char *" lockfile ", int " flags "  );"
 .SH DESCRIPTION
 The
 .B lockfile_create
-function creates an empty lockfile in an NFS safe way. This manual
-page should describe the details here but doesn't as you can see.
+function creates a lockfile in an NFS safe way.
 .PP
-There is no good way to see if a lockfile is stale. Therefore if the lockfile
+If flags is set to
+.B L_PID
+then lockfile_create will not only check for an existing lockfile, but
+it will read the contents as well to see if it contains a process id
+in ASCII. If so, the lockfile is only valid if that process still exists.
+.PP
+If the lockfile is on a shared filesystem, it might have been created by
+a process on a remote host. Thus the process-id checking is useless and
+the L_PID flag should not be set. In this case,
+there is no good way to see if a lockfile is stale. Therefore if the lockfile
 is older then 5 minutes, it will be removed. That is why the
 .B lockfile_touch
 function is provided: while holding the lock, it needs to be refreshed
 regulary (every minute or so) by calling
 .B lockfile_touch "() ".
+.PP
+The
+.B
+lockfile_check
+function checks if a valid lockfile is already present without trying to
+create a new lockfile.
 .PP
 Finally the
 .B lockfile_remove
@@ -39,16 +55,66 @@ returns one of the following status codes:
    #define L_TMPWRITE  3    /* Can't write pid int tmp lockfile     */
    #define L_MAXTRYS   4    /* Failed after max. number of attempts */
    #define L_ERROR     5    /* Unknown error; check errno           */
-
 .fi
+.PP
+.B lockfile_check
+returns 0 if a valid lockfile is present. If no lockfile or no valid
+lockfile is present, -1 is returned.
+.PP
 .B lockfile_touch
 and
 .B lockfile_remove
 return 0 on success. On failure -1 is returned and
 .I errno
 is set appropriately.
+
+.SH ALGORITHM
+The algorithm that is used to create a lockfile in an atomic way,
+even over NFS, is as follows:
+.IP 1
+A unique file is created. In printf format, the name of the file
+is .lk%05d%x%s. The first argument (%05d) is the current process id. The
+second argument (%x) consists of the 4 minor bits of the value returned by
+\fItime\fP(2). The last argument is the system hostname.
+
+.IP 2
+Then the lockfile is created using \fIlink\fP(2). The return value of
+\fIlink\fP is ignored.
+
+.IP 3
+Now the lockfile is \fIstat\fP()ed. If the stat fails, we go to step \fI6\fP.
+
+.IP 4
+The \fIstat\fP value of the lockfile is compared with that of the temporary
+file. If they are the same, we have the lock. The temporary file
+is deleted and a value of 0 (success) is returned to the caller.
+
+.IP 5
+A check is made to see if the existing lockfile is a valid one. If it isn't
+valid, the stale lockfile is deleted.
+
+.IP 6
+Before retrying, we sleep for \fIn\fP seconds. \fIn\fP is initially 5
+seconds, but after every retry 5 extra seconds is added up to a maximum
+of 60 seconds (an incremental backoff). Then we go to
+step \fI2\fP up to \fIretries\fP times.
+
+.SH PERMISSIONS
+
+If you are on a system that has a mail spool directory that is only
+writable by a special group (usually "mail") you cannot create a lockfile
+directly in the mailspool directory without special permissions.
+.PP
+Lockfile_create and lockfile_remove check if the lockfile ends in
+$USERNAME.lock, and if the directory the lockfile is writable
+by group "mail". If so, an external set group-id mail executable
+(\fIdotlockfile\fP(1) ) is spawned to do the actual locking / unlocking.
+
 .SH FILES
-/usr/lib/liblockfile.so.0
+/usr/lib/liblockfile.so.1
+
+.SH AUTHOR
+Miquel van Smoorenburg <miquels@cistron.nl>
 
 .SH "SEE ALSO"
-.BR maillock "(3), " touchlock " (3), " mailunlock (3)
+.BR dotlockfile "(1), " maillock "(3), " touchlock " (3), " mailunlock (3)

@@ -1,19 +1,26 @@
 #! /usr/bin/make -f
 #
 
-MVER	= 0
-SOVER	= 0.1
+# libnfslock
+NMVER	= 0
+NSOVER	= 0.1
+
+# liblockfile
+MVER	= 1
+SOVER	= 1.0
 
 tmp	= debian/tmp
 
 build:
 	$(checkdir)
+	./configure --enable-shared --prefix=/usr \
+		--with-mailgroup
 	make
 	touch build
 
 clean:
 	$(checkdir)
-	make clean
+	[ ! -f Makefile ] || make distclean
 	-rm -rf build $(tmp)* debian/files debian/substvars
 
 binary-indep: checkroot
@@ -22,25 +29,30 @@ binary-indep: checkroot
 binary-arch: checkroot
 	$(checkdir)
 	#
-	#	First, liblockfile.so.0
+	#	First, liblockfile.so.1
 	#
 	-rm -rf $(tmp)*
 	install -d -o root -m 755 $(tmp)
 	install -d -o root -m 755 $(tmp)/DEBIAN
 	install -d -o root -m 755 $(tmp)/usr/lib
-	install -d -o root -m 755 $(tmp)/usr/doc/liblockfile0
+	install -d -o root -m 755 $(tmp)/usr/bin
+	install -d -o root -m 755 $(tmp)/usr/man/man1
+	install -d -o root -m 755 $(tmp)/usr/doc/liblockfile1
 	#
 	install -o root -m 755 debian/postinst $(tmp)/DEBIAN
 	install -o root -m 755 debian/shlibs $(tmp)/DEBIAN
-	install -o root -m 644 -s liblockfile.so.$(SOVER) $(tmp)/usr/lib
+	install -o root -m 644 -s liblockfile.so \
+		$(tmp)/usr/lib/liblockfile.so.$(SOVER)
+	install -o root -m 644 dotlockfile.1 $(tmp)/usr/man/man1
+	install -g mail -m 2755 -s dotlockfile $(tmp)/usr/bin/dotlockfile
 	ln -s liblockfile.so.$(SOVER) $(tmp)/usr/lib/liblockfile.so.$(MVER)
 	install -o root -m 644 debian/changelog \
-		$(tmp)/usr/doc/liblockfile0/changelog
-	gzip -9f $(tmp)/usr/doc/liblockfile0/*
+		$(tmp)/usr/doc/liblockfile1/changelog
+	gzip -9f $(tmp)/usr/doc/liblockfile1/*
 	install -o root -m 644 COPYRIGHT \
-		$(tmp)/usr/doc/liblockfile0/copyright
-	dpkg-shlibdeps liblockfile.so.$(SOVER)
-	dpkg-gencontrol -pliblockfile0 -P$(tmp)
+		$(tmp)/usr/doc/liblockfile1/copyright
+	dpkg-shlibdeps liblockfile.so
+	dpkg-gencontrol -pliblockfile1 -P$(tmp)
 	dpkg --build $(tmp) ..
 	#
 	#	Now build liblockfile-dev
@@ -65,8 +77,11 @@ binary-arch: checkroot
 	gzip -9f $(tmp)/usr/man/*/*
 	dpkg-gencontrol -pliblockfile-dev -P$(tmp)
 	dpkg --build $(tmp) ..
+
+
+binary-nfslock:	checkroot
 	#
-	#	Finally, build libnfslock.
+	#	build libnfslock (OBSOLETE)
 	#
 	-rm -rf $(tmp)*
 	install -d -o root -m 755 $(tmp)
@@ -77,9 +92,9 @@ binary-arch: checkroot
 	install -o root -m 755 debian/shlibs.nfslock $(tmp)/DEBIAN/shlibs
 	install -o root -m 755 debian/postinst.nfs $(tmp)/DEBIAN/postinst
 	install -o root -m 755 debian/prerm.nfs $(tmp)/DEBIAN/prerm
-	install -o root -m 644 nfslock.so.$(SOVER) $(tmp)/lib
-	ln -s nfslock.so.$(SOVER) $(tmp)/lib/nfslock.so.$(MVER)
-	ln -s nfslock.so.$(SOVER) $(tmp)/lib/nfslock.so
+	install -o root -m 644 nfslock.so.$(NSOVER) $(tmp)/lib
+	ln -s nfslock.so.$(NSOVER) $(tmp)/lib/nfslock.so.$(NMVER)
+	ln -s nfslock.so.$(NSOVER) $(tmp)/lib/nfslock.so
 	install -o root -m 644 debian/changelog \
 		$(tmp)/usr/doc/libnfslock/changelog
 	gzip -9f $(tmp)/usr/doc/libnfslock/*

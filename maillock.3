@@ -1,4 +1,4 @@
-.TH MAILOCK 3  "08 March 1998" "Linux Manpage" "Linux Programmer's Manual"
+.TH MAILOCK 3  "17 April 1999" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
 maillock, mailunlock, touchlock \- manage mailbox lockfiles
 .SH SYNOPSIS
@@ -14,14 +14,17 @@ maillock, mailunlock, touchlock \- manage mailbox lockfiles
 .SH DESCRIPTION
 The
 .B maillock
-function tries to create a lockfile for the users mailbox. This mailbox is
-typically located in
+function tries to create a lockfile for the users mailbox in an
+NFS-safe (or resistant) way. The algorithm is documented in
+.BR lockfile_create "(3)".
+.PP
+The mailbox is typically located in
 .B /var/spool/mail.
 The name of the lockfile then becomes
-.B /var/spool/mail/username.lock.
-.B Maillock
-uses an NFS safe algorithm that is documented in
-.BR lockfile_create "(3)".
+.B /var/spool/mail/USERNAME.lock.
+If the environment variable \fI$MAIL\fP is set, and it ends with the same
+username as the username passed to \fBmaillock\fP(), then that file
+is taken as the mailbox to lock instead.
 .PP
 There is no good way to see if a lockfile is stale. Therefore if the lockfile
 is older then 5 minutes, it will be removed. That is why the
@@ -54,11 +57,20 @@ or you need to lock other mailbox (like) files that are not in the
 standard location, use
 .BR lockfile_create "(3)"
 instead.
+.PP
+These functions call
+.BR lockfile_create "(3)"
+to do the work. That function might spawn a set group-id executable
+to do the actual locking if the current process doesn't have enough
+priviliges.
 
 .SH FILES
 /var/spool/mail/user.lock,
 .br
-/usr/lib/liblockfile.so.0
+/usr/lib/liblockfile.so.1
+
+.SH AUTHOR
+Miquel van Smoorenburg <miquels@cistron.nl>
 
 .SH "SEE ALSO"
 .BR lockfile_create "(3), " lockfile_touch " (3), " lockfile_remove (3)

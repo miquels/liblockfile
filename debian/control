@@ -4,22 +4,16 @@ Priority: optional
 Maintainer:  Miquel van Smoorenburg <miquels@cistron.nl>
 Standards-Version: 2.4.0.0
 
-Package: libnfslock
-Section: admin
-Architecture: any
-Description: Preload library that overrides open() to make O_EXCL work over NFS.
- The use of this library is meant as a temporary measure until all applications
- use liblockfile (or a compatible method) to do proper NFS-safe file locking.
-
-Package: liblockfile0
+Package: liblockfile1
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
-Description: Shared library with NFS-safe locking functions.
+Description: Shared library with NFS-safe locking functions. Includes the
+ command-line utility ``dotlockfile''.
 
 Package: liblockfile-dev
 Section: devel
 Architecture: any
-Depends: liblockfile0 (=${Source-Version})
+Depends: liblockfile1 (=${Source-Version})
 Description: Development library for liblockfile.
   Includes headers and documentation.
