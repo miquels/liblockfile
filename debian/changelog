@@ -1,3 +1,11 @@
+liblockfile (1.06.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Remove postinst and prerm scripts, completing the /usr/doc tarnsition.
+    Closes: #322790
+
+ -- Joey Hess <joeyh@debian.org>  Tue, 10 Jan 2006 01:21:31 -0500
+
 liblockfile (1.06) unstable; urgency=low
 
   * Fix manpage - fd = open("/var/mail/USER.lock") should be

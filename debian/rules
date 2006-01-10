@@ -40,8 +40,6 @@ binary-arch: checkroot
 	install -d -o root -m 755 $(tmp)/usr/share/man/man1
 	install -d -o root -m 755 $(tmp)/usr/share/doc/liblockfile1
 	#
-	install -o root -m 755 debian/postinst $(tmp)/DEBIAN
-	install -o root -m 755 debian/prerm $(tmp)/DEBIAN
 	install -o root -m 755 debian/postrm $(tmp)/DEBIAN
 	install -o root -m 644 debian/shlibs $(tmp)/DEBIAN
 	install -o root -m 644 -s liblockfile.so \
@@ -85,10 +83,6 @@ binary-arch: checkroot
 	gzip -9f $(tmp)/usr/share/doc/liblockfile-dev/*
 	install -o root -m 644 COPYRIGHT \
 		$(tmp)/usr/share/doc/liblockfile-dev/copyright
-	install -o root -m 755 debian/postinst.liblockfile-dev \
-		$(tmp)/DEBIAN/postinst
-	install -o root -m 755 debian/prerm.liblockfile-dev \
-		$(tmp)/DEBIAN/prerm
 	dpkg-gencontrol -pliblockfile-dev -P$(tmp) -isp
 	dpkg --build $(tmp) ..
 
