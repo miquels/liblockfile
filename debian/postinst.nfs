@@ -10,6 +10,7 @@ fi
 
 set -e
 umask 022
+
 ldconfig
 
 if [ ! -f /lib/nfslock.so.0 ]

@@ -1,49 +1,25 @@
-liblockfile (1.08-3) unstable; urgency=high
+liblockfile (1.08)
 
-  * Don't stale lockfiles after 10 seconds instead of 5 minutes;
-    patch by Wolfram Sang; closes: #505851
-  * Handle nostrip build option; patch by Justin Pryzby; closes: #437374
-  * debian/rules: Don't ignore error status of rm -fr; patch by Justin Pryzby
-  * debian/rules: Remove stampfiles first; patch by Justin Pryzby
+  * When not writing a pid into the lockfile, write "0\n" as
+    placeholder instead of "0\0" (bug reported by Rob Browning
+    <rlb@defaultvalue.org>)
+  * lockfile_check() did the following:
+      - open lockfile
+      - read from it
+      - stat file and get atime as 'now'
+    this gets the 'now' time from the filesystem so comparisations
+    to mtime work even if the clock of the remote file server is off.
+    However this doesn't work with noatime / relatime, so now we stat
+    the lockfile both before and after the read and use atime only
+    if it differs before and after.
+  * Copy Changelog from debian/changelog now that the package
+    isn't native anymore since 1.07
 
- -- Anibal Monsalve Salazar <anibal@debian.org>  Tue, 18 Nov 2008 00:00:38 +1100
-
-liblockfile (1.08-2) unstable; urgency=low
-
-  * Miquel van Smoorenburg is the maintainer; closes: #465090, #492412
-  * Standards-Version is 3.8.0
-  * liblockfile1 depends on ${misc:Depends}
-
- -- Anibal Monsalve Salazar <anibal@debian.org>  Sat, 26 Jul 2008 15:46:48 +1000
-
-liblockfile (1.08-1) unstable; urgency=low
-
-  * Upload with both miquels and anibal as maintainer, which I think
-    is the correct solution as log as #465090 is still open.
-  * next to debian/changelog there's also Changelog
-  * new upstream version
-
- -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 24 Jul 2008 22:43:18 +0200
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 24 Jul 2008 22:40:34 +0200
 
 liblockfile (1.07-1) unstable; urgency=low
 
-  * New maintainer. Closes: #465090 
-  * ACKed NMUs. Closes: #392779, #322790
-  * Fixed "liblockfile1: fails to call ldconfig". Closes: #376409
-  * Fixed "liblockfile-dev: upgrade from sarge + purge leaves
-    /usr/share/doc/liblockfile1/liblockfile-dev". Closes: #339498
   * Fixed "liblockfile1: option -u is duplicated". Closes: #416271
-  * This package is non-native
-  * Bumped Standards-Version to 3.7.3
-  * liblockfile1: priority is standard
-  * liblockfile-dev: section is libdevel
-  * Fixed the following lintian message:
-    - liblockfile source: substvar-source-version-is-deprecated liblockfile-dev
-    - liblockfile-dev: dev-package-should-be-section-libdevel liblockfile-dev
-    - liblockfile1: postinst-must-call-ldconfig usr/lib/liblockfile.so.1.0
-    - liblockfile-dev: description-synopsis-might-not-be-phrased-properly
-    - liblockfile1: debian-changelog-file-missing-or-wrong-name
-    - liblockfile-dev: debian-changelog-file-missing-or-wrong-name
 
  -- Anibal Monsalve Salazar <anibal@debian.org>  Sat, 05 Apr 2008 12:14:10 +1000
 

@@ -42,7 +42,7 @@ extern char *optarg;
 extern int optind;
 #endif
 
-extern int eaccess(char *, gid_t, struct stat *);
+extern int eaccess_write(char *, gid_t, struct stat *);
 
 /*
  *	Sleep for an amout of time while regulary checking if
@@ -252,14 +252,14 @@ int main(int argc, char **argv)
 		return L_ERROR;
 	}
 	gid = getgid();
-	if (eaccess(dir, gid, &st) < 0) {
+	if (eaccess_write(dir, gid, &st) < 0) {
 		if (errno == ENOENT) {
 enoent:
 			if (!quiet) fprintf(stderr,
 				"dotlockfile: %s: no such directory\n", dir);
 			return L_TMPLOCK;
 		}
-		if ((r = eaccess(dir, getegid(), &st) < 0) && errno == ENOENT)
+		if ((r = eaccess_write(dir, getegid(), &st) < 0) && errno == ENOENT)
 			goto enoent;
 		if (r < 0 || !ismaillock(lockfile, pwd->pw_name)) {
 			if (!quiet) fprintf(stderr,
@@ -272,7 +272,7 @@ enoent:
 	/*
 	 *	Now we should be able to chdir() to the lock directory.
 	 *	When we stat("."), it should be the same as at the
-	 *	eaccess() check or someone played symlink() games on us.
+	 *	eaccess_write() check or someone played symlink() games on us.
 	 */
 	if (chdir(dir) < 0 || stat(".", &st2) < 0) {
 		if (!quiet) fprintf(stderr,

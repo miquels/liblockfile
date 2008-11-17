@@ -54,7 +54,7 @@ extern int check_sleep(int);
 #ifdef LIB
 static
 #endif
-int eaccess(char *fn, gid_t gid, struct stat *st)
+int eaccess_write(char *fn, gid_t gid, struct stat *st)
 {
 	struct stat	tmp;
 	uid_t		uid = geteuid();
@@ -96,7 +96,7 @@ static int need_extern(const char *file)
 		*p = 0;
 	else
 		strcpy(dir, ".");
-	if (eaccess(dir, egid, NULL) >= 0) {
+	if (eaccess_write(dir, egid, NULL) >= 0) {
 		free(dir);
 		return 0;
 	}
@@ -111,7 +111,7 @@ static int need_extern(const char *file)
 			return 0;
 		mailgid = st.st_gid;
 	}
-	ret = eaccess(dir, mailgid, NULL) >= 0;
+	ret = eaccess_write(dir, mailgid, NULL) >= 0;
 	free (dir);
 	return ret;
 }
@@ -231,7 +231,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		p = buf;
 		len = strlen(buf);
 	} else {
-		p = "0";
+		p = "0\n";
 		len = 2;
 	}
 	i = write(fd, p, len);
@@ -341,7 +341,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
  */
 int lockfile_check(const char *lockfile, int flags)
 {
-	struct stat	st;
+	struct stat	st, st2;
 	char		buf[16];
 	time_t		now;
 	pid_t		pid;
@@ -352,17 +352,24 @@ int lockfile_check(const char *lockfile, int flags)
 
 	/*
 	 *	Get the contents and mtime of the lockfile.
-	 *	Use the time of the file system.
 	 */
 	time(&now);
 	pid = 0;
 	if ((fd = open(lockfile, O_RDONLY)) >= 0) {
-		if ((len = read(fd, buf, sizeof(buf))) >= 0 &&
-		    fstat(fd, &st) == 0)
+		/*
+		 *	Try to use 'atime after read' as now, this is
+		 *	the time of the filesystem. Should not get
+		 *	confused by 'atime' or 'noatime' mount options.
+		 */
+		len = 0;
+		if (fstat(fd, &st) == 0 &&
+		    (len = read(fd, buf, sizeof(buf))) >= 0 &&
+		    fstat(fd, &st2) == 0 &&
+		    st.st_atime != st2.st_atime)
 			now = st.st_atime;
 		close(fd);
 		if (len > 0 && (flags & (L_PID|L_PPID))) {
-		buf[len] = 0;
+			buf[len] = 0;
 			pid = atoi(buf);
 		}
 	}
@@ -384,8 +391,10 @@ int lockfile_check(const char *lockfile, int flags)
 	 *	Without a pid in the lockfile, the lock
 	 *	is valid if it is newer than 5 mins.
 	 */
+
 	if (now < st.st_mtime + 300)
 		return 0;
+
 	return -1;
 }
 

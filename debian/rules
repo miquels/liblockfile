@@ -11,6 +11,12 @@ SOVER	= 1.0
 
 tmp	= debian/tmp
 
+INSTALL=install
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL+=-s
+endif
+
+
 build:	config.status
 	$(checkdir)
 	make
@@ -21,8 +27,8 @@ config.status:
 		--with-mailgroup --mandir=/usr/share/man
 	
 clean:
+	rm -rf build $(tmp)* debian/files debian/substvars
 	[ ! -f Makefile ] || make distclean
-	-rm -rf build $(tmp)* debian/files debian/substvars
 
 binary-indep: checkroot
 	$(checkdir)
@@ -32,7 +38,7 @@ binary-arch: checkroot
 	#
 	#	First, liblockfile.so.1
 	#
-	-rm -rf $(tmp)*
+	rm -rf $(tmp)*
 	install -d -o root -m 755 $(tmp)
 	install -d -o root -m 755 $(tmp)/DEBIAN
 	install -d -o root -m 755 $(tmp)/usr/lib
@@ -40,15 +46,18 @@ binary-arch: checkroot
 	install -d -o root -m 755 $(tmp)/usr/share/man/man1
 	install -d -o root -m 755 $(tmp)/usr/share/doc/liblockfile1
 	#
+	install -o root -m 755 debian/postinst $(tmp)/DEBIAN
 	install -o root -m 755 debian/postrm $(tmp)/DEBIAN
 	install -o root -m 644 debian/shlibs $(tmp)/DEBIAN
-	install -o root -m 644 -s liblockfile.so \
+	$(INSTALL) -o root -m 644 liblockfile.so \
 		$(tmp)/usr/lib/liblockfile.so.$(SOVER)
 	install -o root -m 644 dotlockfile.1 $(tmp)/usr/share/man/man1
 	gzip -9f $(tmp)/usr/share/man/*/*
-	install -g mail -m 2755 -s dotlockfile $(tmp)/usr/bin/dotlockfile
+	$(INSTALL) -g mail -m 2755 dotlockfile $(tmp)/usr/bin/dotlockfile
 	ln -s liblockfile.so.$(SOVER) $(tmp)/usr/lib/liblockfile.so.$(MVER)
 	install -o root -m 644 debian/changelog \
+		$(tmp)/usr/share/doc/liblockfile1/changelog.Debian
+	install -o root -m 644 Changelog \
 		$(tmp)/usr/share/doc/liblockfile1/changelog
 	gzip -9f $(tmp)/usr/share/doc/liblockfile1/*
 	install -o root -m 644 COPYRIGHT \
@@ -59,7 +68,7 @@ binary-arch: checkroot
 	#
 	#	Now build liblockfile-dev
 	#
-	-rm -rf $(tmp)*
+	rm -rf $(tmp)*
 	install -d -o root -m 755 $(tmp)
 	install -d -o root -m 755 $(tmp)/DEBIAN
 	install -d -o root -m 755 $(tmp)/usr/lib
@@ -79,6 +88,8 @@ binary-arch: checkroot
 	ln -sf maillock.3.gz $(tmp)/usr/share/man/man3/mailunlock.3.gz
 	ln -sf maillock.3.gz $(tmp)/usr/share/man/man3/touchlock.3.gz
 	install -o root -m 644 debian/changelog \
+		$(tmp)/usr/share/doc/liblockfile-dev/changelog.Debian
+	install -o root -m 644 Changelog \
 		$(tmp)/usr/share/doc/liblockfile-dev/changelog
 	gzip -9f $(tmp)/usr/share/doc/liblockfile-dev/*
 	install -o root -m 644 COPYRIGHT \
@@ -91,7 +102,7 @@ binary-nfslock:	checkroot
 	#
 	#	build libnfslock (OBSOLETE)
 	#
-	-rm -rf $(tmp)*
+	rm -rf $(tmp)*
 	install -d -o root -m 755 $(tmp)
 	install -d -o root -m 755 $(tmp)/DEBIAN
 	install -d -o root -m 755 $(tmp)/lib
@@ -104,6 +115,8 @@ binary-nfslock:	checkroot
 	ln -s nfslock.so.$(NSOVER) $(tmp)/lib/nfslock.so.$(NMVER)
 	ln -s nfslock.so.$(NSOVER) $(tmp)/lib/nfslock.so
 	install -o root -m 644 debian/changelog \
+		$(tmp)/usr/share/doc/libnfslock/changelog.Debian
+	install -o root -m 644 Changelog \
 		$(tmp)/usr/share/doc/libnfslock/changelog
 	gzip -9f $(tmp)/usr/share/doc/libnfslock/*
 	install -o root -m 644 COPYRIGHT \
