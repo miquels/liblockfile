@@ -155,7 +155,7 @@ char *mlockname(char *user)
  */
 void usage(void)
 {
-	fprintf(stderr, "Usage: dotlockfile [-p] [-l|-u] [-r retries] [-c] [-m|lockfile]\n");
+	fprintf(stderr, "Usage:  dotlockfile [-l [-r retries] |-u|-t|-c] [-p] [-m|lockfile]\n");
 	exit(1);
 }
 

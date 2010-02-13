@@ -1,85 +1,159 @@
-.TH DOTLOCKFILE 1 "15 May 2003" "" "Cistron Utilities"
-.SH NAME
+.TH DOTLOCKFILE 1 "September 8, 2009" "" "Cistron Utilities"
+.\"
+.\" Macro for adjustment of spaces between sections at a single location:
+.de ppsh
+.  PP
+.  SH \\$*
+..
+.\" hyphenation language, soft hyphen character, hyphenation space
+.hla us
+.shc \(hy
+.hys 1
+.\"
+.ppsh NAME
 dotlockfile \- Utility to manage lockfiles
-.SH SYNOPSIS
+.ppsh SYNOPSIS
 .B /usr/bin/dotlockfile
-.RB [ \-p ]
-.RB [ \-c ]
-.RB [ \-m ]
-.RB [ \-l|\-u|\-t ]
+.RB [ \-l
 .RB [ \-r
 .IR retries ]
-.RB [ lockfile]
-.SH DESCRIPTION
-\fBDotlockfile\fP is a command line utility to safely create, test and
-remove lockfiles. Lockfiles are created in an NFS-safe way. \fBDotlockfile\fP
-can can also be used to lock and unlock mailboxes even if the mailspool
-directory is only writable by group mail.
+.RB | \-u | \-t | \-c ]
+.RB [ \-p ]
+.RB [ \-m | lockfile ]
+.ppsh DESCRIPTION
+.B dotlockfile
+is a command line utility to reliably create, test and remove lockfiles.
+It creates lockfiles
+.I reliably
+on local and NFS filesystems, because the crucial steps of testing for a
+preexisting lockfile and creating it are performed
+.I atomically
+by a
+.I single
+call to
+.IR link (2).
+Manpage
+.IR lockfile_create (3)
+describes the used algorithm.
 .PP
-The name \fBdotlockfile\fP comes from the way mailboxes are locked for updates
-on a lot of UNIX systems. A lockfile is created with the same filename
-as the mailbox but with the string "\fI.lock\fP" appended.
+.B dotlockfile
+is installed with attribute
+.BI SETGID \ mail
+and thus can also be used to lock and unlock mailboxes
+.I even
+if the mailspool directory is only writable by group mail.
 .PP
-The names \fBdotlock\fP and \fBlockfile\fP were already taken - hence
-the name \fBdotlockfile\fP \fI:)\fP.
-.SH OPTIONS
-.IP "\fB\-l\fP"
-Create a lockfile. This is the default.
-.IP "\fB\-u\fP"
-Remove a lockfile.
-.IP "\fB\-c\fP"
-Check for the existence of a \fBvalid\fP lockfile.
-.IP "\fB\-t\fP"
-Touch an existing lockfile (update the timestamp).
-.IP "\fB\-p\fP"
-Write the \fIprocess-id\fP of the calling process into the lockfile. Also
-when testing for an existing lockfile, check the contents for a process-id
-to find out if the lockfile is still valid.
-.IP "\fB\-r retries\fP"
-The number of times \fBdotlockfile\fP retries to acquire the lock if it
-failed the first time before giving up. The initial sleep after failing
-to acquire the lock is 5 seconds. After each next try, a sleep of 5
-seconds \fIextra\fP occurs up to a maximum sleep of 60 seconds between tries.
+The name
+.B dotlockfile
+comes from the way mailboxes are locked for updates on a lot of UNIX systems.
+A lockfile is created with the same filename as the mailbox but with the string
+"\fI.lock\fR" appended.
+.PP
+The names
+.B dotlock
+and
+.B lockfile
+were already taken \- hence the name \fBdotlockfile\fR \fI:)\fR.
+.ppsh OPTIONS
+.IP "\fB\-l\fR"
+Create a lockfile if no preexisting valid lockfile is found, else wait and retry
+according to option \fB\-r\fR.
+This option is the default.
+
+A lockfile is treated as valid,
+.br
+\[bu]\ \ if it holds the
+.I process\-id
+of a running process,
+.br
+\[bu]\ \ or if it does not hold any
+.I process\-id
+and has been touched less than 5\ minutes ago (timestamp is younger than
+5\ minutes).
+.IP "\fB\-r retries\fR"
+The number of times
+.B dotlockfile
+retries to acquire the lock if it failed the first time before giving up.
+The initial sleep after failing to acquire the lock is 5\ seconds.
+After each retry the sleep intervall is increased incrementally by 5\ seconds
+up to a maximum sleep of 60\ seconds between tries.
 The default number of retries is 5.
-.IP "\fB\-m\fP"
-Lock or unlock the current users mailbox. The path to the mailbox is the
-default system mailspool directory (usually \fI/var/mail\fP) with the
-username as gotten from \fIgetpwuid()\fP appended. If the environment
-variable \fI$MAIL\fP is set, that is used instead. Then the string
-\fI".lock"\fP is appended to get the name of the actual lockfile.
+To try only once, use "\fB\-r 0\fR".
+.IP "\fB\-u\fR"
+Remove a lockfile.
+.IP "\fB\-t\fR"
+Touch an existing lockfile (update the timestamp).
+Useful for lockfiles on NFS filesystems.
+For lockfiles on local filesystems the
+.B \-p
+option is preferable.
+.IP "\fB\-c\fR"
+For debugging only:  Check for the existence of a \fIvalid\fR lockfile.
+
+Note:  Testing for a preexisting lockfile and writing of the lockfile
+.I must
+be done by the
+.I same
+"\fBdotlockfile \-l\fR" or "\fBdotlockfile \-m\fR" command, else the lockfile
+creation cannot be reliable.
+.IP "\fB\-p\fR"
+Write the
+.I process\-id
+of the calling process into the lockfile.
+Also when testing for an existing lockfile, check the contents for the
+.I process\-id
+of a running process to verify if the lockfile is still valid.
+Obviously useful only for lockfiles on local filesystems.
+.IP "\fB\-m\fR"
+Lock or unlock the current users mailbox.
+The path to the mailbox is the default system mailspool directory (usually
+.IR /var/mail )
+with the username as gotten from
+.IR getpwuid ()
+appended.
+If the environment variable
+.I $MAIL
+is set, that is used instead.
+Then the string "\fI.lock\fR" is appended to get the name of the actual
+lockfile.
 .IP lockfile
-The lockfile to be created/removed, unless the \fB-m\fP option is in effect.
-
-.SH "RETURN VALUE"
-
-Zero on success, and non-zero on failure. For the \fB-c\fP option,
-sucess means that a valid lockfile is already present. When locking
-(the default, or the \fB-l\fP option) \fBdotlockfile\fP returns the same
-values as the library function \fIlockfile_create\fP(3). Unlocking
-a non-existant lockfile is not an error.
-
-.SH NOTES
-
-The lockfile is created exactly as named on the command line. The
-extension \fI.lock\fP is \fInot\fP automatically added.
+The lockfile to be created or removed.
+Must not be specified, if the \fB\-m\fR option is in effect.
+.ppsh RETURN\ VALUE
+Zero on success, and non\-zero on failure.
+For the \fB\-c\fR option, sucess means that a valid lockfile is already present.
+When locking (the default, or with the \fB\-l\fR option)
+.B dotlockfile
+returns the same values as the library function
+.IR lockfile_create (3).
+Unlocking a non\-existant lockfile is not an error.
+.ppsh NOTES
+The lockfile is created exactly as named on the command line.
+The extension "\fI.lock\fR" is \fInot\fR automatically appended.
 .PP
-This utility is a lot like the \fIlockfile\fP(1) utility included with
-\fIprocmail\fP, and the \fImutt_dotlock\fP(1) utility included with
-\fImutt\fP. However the command-line arguments differ, and so does the
-return status. It is believed that \fIdotlockfile\fP is the most flexible
-implementation, since it automatically detects when it needs to use
-priviliges to lock a mailbox, and does it safely.
+This utility is a lot like the
+.IR lockfile (1)
+utility included with
+.IR procmail ,
+and the
+.IR mutt_dotlock (1)
+utility included with
+.IR mutt .
+However the command\-line arguments differ, and so does the return status.
+It is believed, that
+.I dotlockfile
+is the most flexible implementation, since it automatically detects when it
+needs to use priviliges to lock a mailbox, and does it safely.
 .PP
-The above mentioned \fIlockfile_create\fP(3) manpage is present
-in the \fIliblockfile-dev\fP package.
-
-.SH BUGS
-
+The above mentioned
+.IR lockfile_create (3)
+manpage is present in the
+.I liblockfile\-dev
+package.
+.ppsh BUGS
 None known.
-
-.SH "SEE ALSO"
-lockfile_create(3),
-maillock(3)
-
-.SH AUTHOR
+.ppsh SEE\ ALSO
+.IR lockfile_create (3),
+.IR maillock (3)
+.ppsh AUTHOR
 Miquel van Smoorenburg, miquels@cistron.nl

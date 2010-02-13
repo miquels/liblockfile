@@ -7,7 +7,7 @@
    or (at your option) any later version.
 
    On Debian GNU/Linux systems, the complete text of the GNU Lesser General
-   Public License can be found in `/usr/share/common-licenses/LGPL'. You can
+   Public License can be found in `/usr/share/common-licenses/LGPL-2'. You can
    also find a copy on the GNU website at http://www.gnu.org/
 
 	Dotlockfile is Copyright (C) Miquel van Smoorenburg 1999,2001,2003
@@ -18,6 +18,6 @@
    or (at your option) any later version.
 
    On Debian GNU/Linux systems, the complete text of the GNU Library
-   General Public License can be found in `/usr/share/common-licenses/LGPL'.
+   General Public License can be found in `/usr/share/common-licenses/LGPL-2'.
    You can also find a copy on the GNU website at http://www.gnu.org/
 

@@ -29,7 +29,7 @@ shared:		liblockfile.so dotlockfile
 nfslib:		nfslock.so.$(VER)
 
 liblockfile.a:	lockfile.o
-		ar rv liblockfile.a lockfile.o
+		$(AR) rv liblockfile.a lockfile.o
 
 liblockfile.so: liblockfile.a
 		$(CC) -fPIC -shared -Wl,-soname,liblockfile.so.1 \
