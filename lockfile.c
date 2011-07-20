@@ -58,17 +58,35 @@ int eaccess_write(char *fn, gid_t gid, struct stat *st)
 {
 	struct stat	tmp;
 	uid_t		uid = geteuid();
+	gid_t		*aux;
+	int		n, i;
 
 	if (st == NULL) st = &tmp;
 
 	if (stat(fn, st) != 0)
 		return -1;
 	errno = EPERM;
+
 	if (uid == 0) return 0;
+
 	if (st->st_uid == uid)
 		return (st->st_mode & 0200) ? 0 : -1;
+
 	if (st->st_gid == gid)
 		return (st->st_mode & 0020) ? 0 : -1;
+
+	if ((n = getgroups(0, NULL)) > 0) {
+		aux = malloc(n * sizeof(gid_t));
+		if (aux && getgroups(n, aux) == 0) {
+			for (i = 0; i < n; i++)
+				if (st->st_gid == aux[i]) {
+					free(aux);
+					return (st->st_mode & 0020) ? 0 : -1;
+				}
+		}
+		free(aux);
+	}
+
 	return (st->st_mode & 0002) ? 0 : -1;
 }
 #endif
@@ -170,10 +188,13 @@ static int do_extern(char *opt, const char *lockfile, int retries, int flags)
 /*
  *	Create a lockfile.
  */
-int lockfile_create(const char *lockfile, int retries, int flags)
+#ifdef LIB
+static
+#endif
+int lockfile_create_save_tmplock(const char *lockfile,
+		char *tmplock, int tmplocksz, int retries, int flags)
 {
 	struct stat	st, st1;
-	char		*tmplock;
 	char		sysname[256];
 	char		buf[8];
 	char		*p;
@@ -194,6 +215,11 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 	}
 #endif
 
+	if (strlen(lockfile) + 32 + 1 > tmplocksz) {
+		errno = EINVAL;
+		return L_ERROR;
+	}
+
 #if defined(LIB) && defined(MAILGROUP)
 	if (need_extern(lockfile))
 		return do_extern("-l", lockfile, retries, flags);
@@ -207,8 +233,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		return L_ERROR;
 	if ((p = strchr(sysname, '.')) != NULL)
 		*p = 0;
-	if ((tmplock = (char *)malloc(strlen(lockfile)+32+1)) == NULL)
-		return L_ERROR;
+	/* strcpy is safe: length-check above, limited at sprintf below */
 	strcpy(tmplock, lockfile);
 	if ((p = strrchr(tmplock, '/')) == NULL)
 		p = tmplock;
@@ -221,7 +246,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 	e = errno;
 	umask(i);
 	if (fd < 0) {
-		free (tmplock);
+		tmplock[0] = 0;
 		errno = e;
 		return L_TMPLOCK;
 	}
@@ -242,7 +267,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 	}
 	if (i != len) {
 		unlink(tmplock);
-		free (tmplock);
+		tmplock[0] = 0;
 		errno = i < 0 ? e : EAGAIN;
 		return L_TMPWRITE;
 	}
@@ -260,7 +285,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 #else
 			if ((e = check_sleep(sleeptime)) != 0) {
 				unlink(tmplock);
-				free (tmplock);
+				tmplock[0] = 0;
 				return e;
 			}
 #endif
@@ -279,9 +304,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		(void)link(tmplock, lockfile);
 
 		if (lstat(tmplock, &st1) < 0) {
-			e = errno;
-			free (tmplock);
-			errno = e;
+			tmplock[0] = 0;
 			return L_ERROR; /* Can't happen */
 		}
 
@@ -295,7 +318,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 				 */
 				e = errno;
 				(void)unlink(tmplock);
-				free (tmplock);
+				tmplock[0] = 0;
 				errno = e;
 				return L_MAXTRYS;
 			}
@@ -308,7 +331,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		if (st.st_rdev == st1.st_rdev &&
 		    st.st_ino  == st1.st_ino) {
 			(void)unlink(tmplock);
-			free (tmplock);
+			tmplock[0] = 0;
 			return L_SUCCESS;
 		}
 		statfailed = 0;
@@ -330,9 +353,26 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 
 	}
 	(void)unlink(tmplock);
-	free (tmplock);
+	tmplock[0] = 0;
 	errno = EAGAIN;
 	return L_MAXTRYS;
+}
+
+int lockfile_create(const char *lockfile, int retries, int flags)
+{
+	char *tmplock;
+	int l, r, e;
+
+	l = strlen(lockfile)+32+1;
+	if ((tmplock = (char *)malloc(l)) == NULL)
+		return L_ERROR;
+	tmplock[0] = 0;
+	r = lockfile_create_save_tmplock(lockfile,
+						tmplock, l, retries, flags);
+	e = errno;
+	free(tmplock);
+	errno = e;
+	return r;
 }
 
 /*

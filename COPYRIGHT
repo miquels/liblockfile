@@ -1,5 +1,8 @@
 
-	Liblockfile is Copyright (C) Miquel van Smoorenburg 1999,2001,2003
+	Liblockfile is (c) Copyright 1999-2011 Miquel van Smoorenburg.
+	Changes submitted by other people in the form of patches
+	remain under their copyright but are licensed under the same
+	conditions as liblockfile. See the ChangeLog file for details.
 
    This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published
@@ -10,7 +13,11 @@
    Public License can be found in `/usr/share/common-licenses/LGPL-2'. You can
    also find a copy on the GNU website at http://www.gnu.org/
 
-	Dotlockfile is Copyright (C) Miquel van Smoorenburg 1999,2001,2003
+
+	Dotlockfile is (c) Copyright 1999-2011 Miquel van Smoorenburg.
+	Changes submitted by other people in the form of patches
+	remain under their copyright but are licensed under the same
+	conditions as dotlockfile. See the ChangeLog file for details.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published

@@ -1,18 +1,7 @@
 .TH DOTLOCKFILE 1 "September 8, 2009" "" "Cistron Utilities"
-.\"
-.\" Macro for adjustment of spaces between sections at a single location:
-.de ppsh
-.  PP
-.  SH \\$*
-..
-.\" hyphenation language, soft hyphen character, hyphenation space
-.hla us
-.shc \(hy
-.hys 1
-.\"
-.ppsh NAME
+.SH NAME
 dotlockfile \- Utility to manage lockfiles
-.ppsh SYNOPSIS
+.SH SYNOPSIS
 .B /usr/bin/dotlockfile
 .RB [ \-l
 .RB [ \-r
@@ -20,7 +9,7 @@ dotlockfile \- Utility to manage lockfiles
 .RB | \-u | \-t | \-c ]
 .RB [ \-p ]
 .RB [ \-m | lockfile ]
-.ppsh DESCRIPTION
+.SH DESCRIPTION
 .B dotlockfile
 is a command line utility to reliably create, test and remove lockfiles.
 It creates lockfiles
@@ -54,7 +43,7 @@ The names
 and
 .B lockfile
 were already taken \- hence the name \fBdotlockfile\fR \fI:)\fR.
-.ppsh OPTIONS
+.SH OPTIONS
 .IP "\fB\-l\fR"
 Create a lockfile if no preexisting valid lockfile is found, else wait and retry
 according to option \fB\-r\fR.
@@ -79,6 +68,7 @@ After each retry the sleep intervall is increased incrementally by 5\ seconds
 up to a maximum sleep of 60\ seconds between tries.
 The default number of retries is 5.
 To try only once, use "\fB\-r 0\fR".
+To try indefinitely, use "\fB\-r -1\fR".
 .IP "\fB\-u\fR"
 Remove a lockfile.
 .IP "\fB\-t\fR"
@@ -119,7 +109,7 @@ lockfile.
 .IP lockfile
 The lockfile to be created or removed.
 Must not be specified, if the \fB\-m\fR option is in effect.
-.ppsh RETURN\ VALUE
+.SH RETURN\ VALUE
 Zero on success, and non\-zero on failure.
 For the \fB\-c\fR option, sucess means that a valid lockfile is already present.
 When locking (the default, or with the \fB\-l\fR option)
@@ -127,7 +117,7 @@ When locking (the default, or with the \fB\-l\fR option)
 returns the same values as the library function
 .IR lockfile_create (3).
 Unlocking a non\-existant lockfile is not an error.
-.ppsh NOTES
+.SH NOTES
 The lockfile is created exactly as named on the command line.
 The extension "\fI.lock\fR" is \fInot\fR automatically appended.
 .PP
@@ -150,10 +140,10 @@ The above mentioned
 manpage is present in the
 .I liblockfile\-dev
 package.
-.ppsh BUGS
+.SH BUGS
 None known.
-.ppsh SEE\ ALSO
+.SH SEE\ ALSO
 .IR lockfile_create (3),
 .IR maillock (3)
-.ppsh AUTHOR
+.SH AUTHOR
 Miquel van Smoorenburg, miquels@cistron.nl

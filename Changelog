@@ -1,3 +1,26 @@
+liblockfile (1.09)
+
+  * Update path to full license in the COPYRIGHT file
+    (Anibal Monsalve Salazar)
+  * Remove debug code from lockfile_create():
+     The lockfile_create-function still contains some debug code, which
+     considers a lock stale after 10 seconds instead of 5 minutes. As
+     the documentation suggests refreshing the lock every 60 seconds,
+     programs might lose the lock unexpectedly. Found while researching
+     debian bug #505278. (Wolfram Sang <w.sang@pengutronix.de>)
+  * Updated dotlockfile manpage and updated dotlockfile usage message.
+    Fixes debian bug 493462 (Roland Eggner <edvd1@systemanalysen.net>)
+  * Change 'ar' in Makefile.in to '$(AR)' (for cross builds).
+    Fixes debian bug 562937 (Wolfram Sang <wsa@pengutronix.de>)
+  * Clean up temporary lockfile if lockfile(1) was interrupted.
+  * dotlockfile now also allows you to create a lockfile in
+    a group-writable-by-one-of-your-auxilary-groups directory
+  * dotlockfile: -r-1 now retries indefinitely (well, 4000 years)
+  * remove ppsh macro in dotlockfile.1, replace with standard .SH
+    (Iain Calder <dn097@torfree.net>)
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Wed, 20 Jul 2011 15:54:58 +0200
+
 liblockfile (1.08)
 
   * When not writing a pid into the lockfile, write "0\n" as

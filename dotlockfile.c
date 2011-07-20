@@ -43,6 +43,39 @@ extern int optind;
 #endif
 
 extern int eaccess_write(char *, gid_t, struct stat *);
+extern int lockfile_create_save_tmplock(const char *lockfile,
+                char *tmplock, int tmplocksz, int retries, int flags);
+
+char *tmplock;
+
+/*
+ *	If we got SIGINT, SIGQUIT, SIGHUP, remove the
+ *	tempfile and re-raise the signal.
+ */
+void got_signal(int sig)
+{
+	if (tmplock && tmplock[0])
+		unlink(tmplock);
+	signal(sig, SIG_DFL);
+	raise(sig);
+}
+
+/*
+ *	Install signal handler only if the signal was
+ *	not ignored already.
+ */
+int set_signal(int sig, void (*handler)(int))
+{
+	struct sigaction sa;
+
+	if (sigaction(sig, NULL, &sa) < 0)
+		return -1;
+	if (sa.sa_handler == SIG_IGN)
+		return 0;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = handler;
+	return sigaction(sig, &sa, NULL);
+}
 
 /*
  *	Sleep for an amout of time while regulary checking if
@@ -166,13 +199,19 @@ int main(int argc, char **argv)
 	struct stat	st, st2;
 	gid_t		gid;
 	char		*dir, *file, *lockfile = NULL;
-	int 		c, r;
+	int 		c, r, l;
 	int		retries = 5;
 	int		flags = 0;
 	int		unlock = 0;
 	int		check = 0;
 	int		quiet = 0;
 	int		touch = 0;
+
+	set_signal(SIGINT, got_signal);
+	set_signal(SIGQUIT, got_signal);
+	set_signal(SIGHUP, got_signal);
+	set_signal(SIGTERM, got_signal);
+	set_signal(SIGPIPE, got_signal);
 
 	/*
 	 *	Get username for mailbox-locks.
@@ -197,10 +236,16 @@ int main(int argc, char **argv)
 			break;
 		case 'r':
 			retries = atoi(optarg);
-			if (retries <= 0 && strcmp(optarg, "0") != 0) {
+			if (retries <= 0 &&
+			    retries != -1 && strcmp(optarg, "0") != 0) {
 				fprintf(stderr,
-				    "dotlockfile: -r: need argument >= 0\n");
+				    "dotlockfile: -r %s: invalid argument\n",
+						optarg);
 				return L_ERROR;
+			}
+			if (retries == -1) {
+				/* 4000 years */
+				retries = 2147483647;
 			}
 			break;
 		case 'm':
@@ -306,6 +351,12 @@ enoent:
 	/*
 	 *	No, lock.
 	 */
-	return lockfile_create(file, retries, flags);
+	l = strlen(file) + 32 + 1;
+	tmplock = malloc(l);
+	if (tmplock == NULL) {
+		perror("malloc");
+		exit(L_ERROR);
+	}
+	return lockfile_create_save_tmplock(file, tmplock, l, retries, flags);
 }
 
