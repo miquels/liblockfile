@@ -158,7 +158,7 @@ static int do_extern(char *opt, const char *lockfile, int retries, int flags)
 	if ((pid = fork()) < 0)
 		return L_ERROR;
 	if (pid == 0) {
-		sprintf(buf, "%d", retries % 1000);
+		snprintf(buf, sizeof(buf), "%d", retries % 1000);
 		execl(LOCKPROG, LOCKPROG, opt, "-r", buf, "-q",
 			(flags & L_PID) ? "-p" : "-N", lockfile, NULL);
 		_exit(L_ERROR);
@@ -185,6 +185,14 @@ static int do_extern(char *opt, const char *lockfile, int retries, int flags)
 
 #endif
 
+#define TMPLOCKSTR		".lk"
+#define TMPLOCKSTRSZ		strlen(TMPLOCKSTR)
+#define TMPLOCKPIDSZ		5
+#define TMPLOCKTIMESZ		1
+#define TMPLOCKSYSNAMESZ	23
+#define TMPLOCKFILENAMESZ	(TMPLOCKSTRSZ + TMPLOCKPIDSZ + \
+				 TMPLOCKTIMESZ + TMPLOCKSYSNAMESZ)
+
 /*
  *	Create a lockfile.
  */
@@ -196,7 +204,7 @@ int lockfile_create_save_tmplock(const char *lockfile,
 {
 	struct stat	st, st1;
 	char		sysname[256];
-	char		buf[8];
+	char		buf[40];
 	char		*p;
 	int		sleeptime = 0;
 	int		statfailed = 0;
@@ -209,13 +217,13 @@ int lockfile_create_save_tmplock(const char *lockfile,
 	/*
 	 *	Safety measure.
 	 */
-	if (strlen(lockfile) + 32 > MAXPATHLEN) {
+	if (strlen(lockfile) + TMPLOCKFILENAMESZ > MAXPATHLEN) {
 		errno = ENAMETOOLONG;
 		return L_ERROR;
 	}
 #endif
 
-	if (strlen(lockfile) + 32 + 1 > tmplocksz) {
+	if (strlen(lockfile) + TMPLOCKFILENAMESZ + 1 > tmplocksz) {
 		errno = EINVAL;
 		return L_ERROR;
 	}
@@ -233,14 +241,16 @@ int lockfile_create_save_tmplock(const char *lockfile,
 		return L_ERROR;
 	if ((p = strchr(sysname, '.')) != NULL)
 		*p = 0;
-	/* strcpy is safe: length-check above, limited at sprintf below */
+	/* strcpy is safe: length-check above, limited at snprintf below */
 	strcpy(tmplock, lockfile);
 	if ((p = strrchr(tmplock, '/')) == NULL)
 		p = tmplock;
 	else
 		p++;
-	sprintf(p, ".lk%05d%x%s",
-		(int)getpid(), (int)time(NULL) & 15, sysname);
+	snprintf(p, TMPLOCKFILENAMESZ, "%s%0*d%0*x%s", TMPLOCKSTR,
+		 TMPLOCKPIDSZ, (int)getpid(),
+		 TMPLOCKTIMESZ, (int)time(NULL) & 15,
+		 sysname);
 	i = umask(022);
 	fd = open(tmplock, O_WRONLY|O_CREAT|O_EXCL, 0644);
 	e = errno;
@@ -251,8 +261,8 @@ int lockfile_create_save_tmplock(const char *lockfile,
 		return L_TMPLOCK;
 	}
 	if (flags & (L_PID | L_PPID)) {
-		sprintf(buf, "%d\n",
-			(flags & L_PID) ? (int)getpid() : (int)getppid());
+		snprintf(buf, sizeof(buf), "%d\n",
+			 (flags & L_PID) ? (int)getpid() : (int)getppid());
 		p = buf;
 		len = strlen(buf);
 	} else {
@@ -363,7 +373,7 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 	char *tmplock;
 	int l, r, e;
 
-	l = strlen(lockfile)+32+1;
+	l = strlen(lockfile)+TMPLOCKFILENAMESZ+1;
 	if ((tmplock = (char *)malloc(l)) == NULL)
 		return L_ERROR;
 	tmplock[0] = 0;
