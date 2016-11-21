@@ -204,12 +204,13 @@ int lockfile_create_save_tmplock(const char *lockfile,
 {
 	struct stat	st, st1;
 	char		sysname[256];
-	char		buf[40];
+	char		pidbuf[40];
 	char		*p;
+	pid_t		pid = 0;
 	int		sleeptime = 0;
 	int		statfailed = 0;
 	int		fd;
-	int		i, e, len;
+	int		i, e, pidlen;
 	int		dontsleep = 1;
 	int		tries = retries + 1;
 
@@ -232,6 +233,21 @@ int lockfile_create_save_tmplock(const char *lockfile,
 	if (need_extern(lockfile))
 		return do_extern("-l", lockfile, retries, flags);
 #endif
+
+	if (flags & L_PID)
+		pid = getpid();
+	if (flags & L_PPID) {
+		pid = getppid();
+		if (pid == 1) {
+			/* orphaned */
+			return L_ORPHANED;
+		}
+	}
+	pidlen = snprintf(pidbuf, sizeof(pidbuf), "%d\n", pid);
+	if (pidlen > sizeof(pidbuf) - 1) {
+		errno = EOVERFLOW;
+		return L_ERROR;
+	}
 
 	/*
 	 *	Create a temp lockfile (hopefully unique) and write
@@ -260,22 +276,13 @@ int lockfile_create_save_tmplock(const char *lockfile,
 		errno = e;
 		return L_TMPLOCK;
 	}
-	if (flags & (L_PID | L_PPID)) {
-		snprintf(buf, sizeof(buf), "%d\n",
-			 (flags & L_PID) ? (int)getpid() : (int)getppid());
-		p = buf;
-		len = strlen(buf);
-	} else {
-		p = "0\n";
-		len = 2;
-	}
-	i = write(fd, p, len);
+	i = write(fd, pidbuf, pidlen);
 	e = errno;
 	if (close(fd) != 0) {
 		e = errno;
 		i = -1;
 	}
-	if (i != len) {
+	if (i != pidlen) {
 		unlink(tmplock);
 		tmplock[0] = 0;
 		errno = i < 0 ? e : EAGAIN;
