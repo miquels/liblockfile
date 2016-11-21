@@ -1,3 +1,12 @@
+liblockfile (1.10)
+
+  * add complete GPL/LGPL licenses to source code
+  * Merge all debian patches into upstream
+  * fail to lock if parent is PID 1 - makes no sense to write PID 1
+    as owning process into the lockfile (Per Cederqvist <cederp@opera.com>)
+
+ -- Miquel van Smoorenburg <mike@langeraar.net>  Fri, 18 Nov 2016 14:14:28 +0100
+
 liblockfile (1.09)
 
   * Update path to full license in the COPYRIGHT file
