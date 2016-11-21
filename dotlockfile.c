@@ -311,8 +311,12 @@ enoent:
 				"dotlockfile: %s: permission denied\n", lockfile);
 			return L_TMPLOCK;
 		}
-	} else
-		setgid(gid);
+	} else {
+		if (setgid(gid) < 0) {
+			perror("dotlockfile: setgid");
+			return L_ERROR;
+		}
+	}
 
 	/*
 	 *	Now we should be able to chdir() to the lock directory.
