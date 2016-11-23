@@ -1,7 +1,7 @@
 Begin4
 Title:		liblockfile - a lockfile library
 Version:	1.10
-Entered-Date:	2016-11-18
+Entered-Date:	2016-11-23
 Description:	liblockfile is a library that contains NFS-safe locking
 		functions. It also contains an implementation of the SVR4
 		maillock() functions. The functions in liblockfile can
@@ -10,7 +10,7 @@ Description:	liblockfile is a library that contains NFS-safe locking
 		`dotlockfile'. That utility can also be used stand-alone.
 Author:		mike@langeraar.net (Miquel van Smoorenburg)
 Primary-Site:	github.com /mikevs/liblockfile/archive
-		v1.09-6.tar.gz
+		v1.10.tar.gz
 Copying-Policy:	LGPL,GPL
 Keywords:	locking mail dotlock dotlockfile library
 End
