@@ -3,9 +3,9 @@
  *			Runs setgid mail so is able to lock mailboxes
  *			as well. Liblockfile can call this command.
  *
- * Version:	@(#)dotlockfile.c  1.1  15-May-2003  miquels@cistron.nl
+ * Version:	@(#)dotlockfile.c  1.11  07-Dec-2016  miquels@cistron.nl
  *
- *		Copyright (C) Miquel van Smoorenburg 1999,2003
+ *		Copyright (C) Miquel van Smoorenburg 1999-2016
  *
  *		This program is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU General Public License
@@ -20,6 +20,7 @@
 #include <sys/param.h>
 #endif
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <stdio.h>
 #include <string.h>
 #include <pwd.h>
@@ -58,6 +59,10 @@ void got_signal(int sig)
 		unlink(tmplock);
 	signal(sig, SIG_DFL);
 	raise(sig);
+}
+
+void ignore_signal(int sig)
+{
 }
 
 /*
@@ -188,7 +193,9 @@ char *mlockname(char *user)
  */
 void usage(void)
 {
-	fprintf(stderr, "Usage:  dotlockfile [-l [-r retries] |-u|-t|-c] [-p] [-m|lockfile]\n");
+	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] -p <-m|lockfile>\n");
+	fprintf(stderr, "        dotlockfile -u|-t|-c\n");
+	fprintf(stderr, "        dotlockfile <-m|-l lockfile> [-r retries] [-t] [-p] -x command args...\n");
 	exit(1);
 }
 
@@ -199,6 +206,7 @@ int main(int argc, char **argv)
 	struct stat	st, st2;
 	gid_t		gid;
 	char		*dir, *file, *lockfile = NULL;
+	char		**cmd = NULL;
 	int 		c, r, l;
 	int		retries = 5;
 	int		flags = 0;
@@ -206,6 +214,7 @@ int main(int argc, char **argv)
 	int		check = 0;
 	int		quiet = 0;
 	int		touch = 0;
+	int		writepid = 0;
 
 	set_signal(SIGINT, got_signal);
 	set_signal(SIGQUIT, got_signal);
@@ -224,12 +233,13 @@ int main(int argc, char **argv)
 	/*
 	 *	Process the options.
 	 */
-	while ((c = getopt(argc, argv, "qpNr:mluct")) != EOF) switch(c) {
+	while ((c = getopt(argc, argv, "+qpNr:mluctx")) != EOF) {
+		switch(c) {
 		case 'q':
 			quiet = 1;
 			break;
 		case 'p':
-			flags |= L_PPID;
+			writepid = 1;
 			break;
 		case 'N':
 			/* NOP */
@@ -256,7 +266,11 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'l':
-			/* default: lock */
+			/* -l can optionally have a lockfile arg */
+			if (!optarg && argv[optind] && argv[optind][0] != '-')
+				optarg = argv[optind++];
+			if (optarg)
+				lockfile = optarg;
 			break;
 		case 'u':
 			unlock = 1;
@@ -267,19 +281,34 @@ int main(int argc, char **argv)
 		case 't':
 			touch = 1;
 			break;
+		case 'x':
+			cmd = argv + optind;
+			break;
 		default:
 			usage();
+			break;
+		}
+		if (cmd)
 			break;
 	}
 
 	/*
+	 *	Options sanity check
+	 */
+	if (cmd && (check || unlock || !lockfile))
+			usage();
+
+	/*
 	 *	Need a lockfile, ofcourse.
 	 */
-	if (lockfile && optind < argc) usage();
+	if (lockfile && !cmd && optind < argc) usage();
 	if (lockfile == NULL) {
 		if (optind != argc - 1) usage();
 		lockfile = argv[optind];
 	}
+
+	if (writepid)
+		flags |= (cmd ? L_PID : L_PPID);
 
 #ifdef MAXPATHLEN
 	if (strlen(lockfile) >= MAXPATHLEN) {
@@ -343,7 +372,7 @@ enoent:
 	/*
 	 *	Touch lock ?
 	 */
-	if (touch)
+	if (touch && !cmd)
 		return (lockfile_touch(file) < 0) ? 1 : 0;
 
 	/*
@@ -361,6 +390,45 @@ enoent:
 		perror("malloc");
 		exit(L_ERROR);
 	}
-	return lockfile_create_save_tmplock(file, tmplock, l, retries, flags);
+	r = lockfile_create_save_tmplock(file, tmplock, l, retries, flags);
+	if (r != 0 || !cmd)
+		return r;
+
+	/*
+	 *	Spawn command
+	 */
+	set_signal(SIGINT, ignore_signal);
+	set_signal(SIGQUIT, ignore_signal);
+	set_signal(SIGHUP, ignore_signal);
+	set_signal(SIGALRM, ignore_signal);
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		perror("fork");
+		lockfile_remove(file);
+		exit(L_ERROR);
+	}
+	if (pid == 0) {
+		execvp(cmd[0], cmd);
+		perror(cmd[0]);
+		exit(127);
+	}
+
+	/* wait for child */
+	int e, wstatus;
+	while (1) {
+		if (touch)
+			alarm(60);
+		e = waitpid(pid, &wstatus, 0);
+		if (e >= 0 || errno != EINTR)
+			break;
+		if (touch)
+			lockfile_touch(file);
+	} while (0);
+
+	alarm(0);
+	lockfile_remove(file);
+
+	return 0;
 }
 
