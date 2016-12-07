@@ -1,3 +1,9 @@
+liblockfile (1.11)
+
+  * fix dotlockfile -r -1 functionality
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 08 Dec 2016 00:11:45 +0100
+
 liblockfile (1.10)
 
   * add complete GPL/LGPL licenses to source code

@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 			}
 			if (retries == -1) {
 				/* 4000 years */
-				retries = 2147483647;
+				retries = 0x7ffffff0;
 			}
 			break;
 		case 'm':
