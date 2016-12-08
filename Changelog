@@ -2,6 +2,9 @@ liblockfile (1.11)
 
   * fix dotlockfile -r -1 functionality
   * add -x cmd args... functionality to dotlockfile
+  * dotlockfile: use geteuid() instead of getuid() to find out mailboxname.
+  * before forking an external program, first check geteuid() != 0,
+    then do setuid(geteuid())
 
  -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 08 Dec 2016 00:11:45 +0100
 

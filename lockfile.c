@@ -145,6 +145,12 @@ static int do_extern(char *opt, const char *lockfile, int retries, int flags)
 	int		st;
 
 	/*
+	 * Better safe than sorry.
+	 */
+	if (geteuid() == 0)
+		return L_ERROR;
+
+	/*
 	 *	Block SIGCHLD. The main program might have installed
 	 *	handlers we don't want to call.
 	 */
@@ -158,6 +164,11 @@ static int do_extern(char *opt, const char *lockfile, int retries, int flags)
 	if ((pid = fork()) < 0)
 		return L_ERROR;
 	if (pid == 0) {
+		/* drop privs */
+		if (setuid(geteuid()) < 0) {
+			perror("setuid");
+			_exit(L_ERROR);
+		}
 		snprintf(buf, sizeof(buf), "%d", retries % 1000);
 		execl(LOCKPROG, LOCKPROG, opt, "-r", buf, "-q",
 			(flags & L_PID) ? "-p" : "-N", lockfile, NULL);

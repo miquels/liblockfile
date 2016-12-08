@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 	/*
 	 *	Get username for mailbox-locks.
 	 */
-	if ((pwd = getpwuid(getuid())) == NULL) {
+	if ((pwd = getpwuid(geteuid())) == NULL) {
 		fprintf(stderr, "dotlockfile: You don't exist. Go away.\n");
 		return L_ERROR;
 	}
