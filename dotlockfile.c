@@ -3,9 +3,9 @@
  *			Runs setgid mail so is able to lock mailboxes
  *			as well. Liblockfile can call this command.
  *
- * Version:	@(#)dotlockfile.c  1.11  07-Dec-2016  miquels@cistron.nl
+ * Version:	@(#)dotlockfile.c  1.11  03-Jan-2017  miquels@cistron.nl
  *
- *		Copyright (C) Miquel van Smoorenburg 1999-2016
+ *		Copyright (C) Miquel van Smoorenburg 1999-2017
  *
  *		This program is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU General Public License
@@ -193,9 +193,9 @@ char *mlockname(char *user)
  */
 void usage(void)
 {
-	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] -p <-m|lockfile>\n");
+	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-p] <-m|lockfile>\n");
+	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] [-t] <-m|lockfile> command args...\n");
 	fprintf(stderr, "        dotlockfile -u|-t|-c\n");
-	fprintf(stderr, "        dotlockfile <-m|-l lockfile> [-r retries] [-t] [-p] -x command args...\n");
 	exit(1);
 }
 
@@ -210,6 +210,7 @@ int main(int argc, char **argv)
 	int 		c, r, l;
 	int		retries = 5;
 	int		flags = 0;
+	int		lock = 0;
 	int		unlock = 0;
 	int		check = 0;
 	int		quiet = 0;
@@ -233,8 +234,7 @@ int main(int argc, char **argv)
 	/*
 	 *	Process the options.
 	 */
-	while ((c = getopt(argc, argv, "+qpNr:mluctx")) != EOF) {
-		switch(c) {
+	while ((c = getopt(argc, argv, "+qpNr:mluct")) != EOF) switch(c) {
 		case 'q':
 			quiet = 1;
 			break;
@@ -266,11 +266,7 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'l':
-			/* -l can optionally have a lockfile arg */
-			if (!optarg && argv[optind] && argv[optind][0] != '-')
-				optarg = argv[optind++];
-			if (optarg)
-				lockfile = optarg;
+			lock = 1;
 			break;
 		case 'u':
 			unlock = 1;
@@ -281,31 +277,31 @@ int main(int argc, char **argv)
 		case 't':
 			touch = 1;
 			break;
-		case 'x':
-			cmd = argv + optind;
-			break;
 		default:
 			usage();
 			break;
-		}
-		if (cmd)
-			break;
 	}
+
+	/*
+	 * next argument may be lockfile name
+	 */
+	if (!lockfile) {
+		if (optind == argc)
+			usage();
+		lockfile = argv[optind++];
+	}
+
+	/*
+	 * next arguments may be command [args...]
+	 */
+	if (optind < argc)
+		cmd = argv + optind;
 
 	/*
 	 *	Options sanity check
 	 */
-	if (cmd && (check || unlock || !lockfile))
-			usage();
-
-	/*
-	 *	Need a lockfile, ofcourse.
-	 */
-	if (lockfile && !cmd && optind < argc) usage();
-	if (lockfile == NULL) {
-		if (optind != argc - 1) usage();
-		lockfile = argv[optind];
-	}
+	if ((cmd || lock) && (check || unlock))
+		usage();
 
 	if (writepid)
 		flags |= (cmd ? L_PID : L_PPID);
