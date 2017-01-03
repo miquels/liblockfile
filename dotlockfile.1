@@ -89,21 +89,11 @@ Useful for lockfiles on NFS filesystems.
 For lockfiles on local filesystems the
 .B \-p
 option is preferable.
-.IP "\fB\-c\fR"
-For debugging only:  Check for the existence of a \fIvalid\fR lockfile.
-
-Note:  Testing for a preexisting lockfile and writing of the lockfile
-.I must
-be done by the
-.I same
-"\fBdotlockfile \-l\fR" or "\fBdotlockfile \-m\fR" command, else the lockfile
-creation cannot be reliable.
 .IP "\fB\-p\fR"
 Write the
 .I process\-id
-of the calling process (or dotlockfile itself if the
-.I -x
-option is used) into the lockfile.
+of the calling process (or dotlockfile itself if a command is executed)
+into the lockfile.
 Also when testing for an existing lockfile, check the contents for the
 .I process\-id
 of a running process to verify if the lockfile is still valid.
