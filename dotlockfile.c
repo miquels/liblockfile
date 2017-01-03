@@ -195,7 +195,7 @@ void usage(void)
 {
 	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-p] <-m|lockfile>\n");
 	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] [-t] <-m|lockfile> command args...\n");
-	fprintf(stderr, "        dotlockfile -u|-t|-c\n");
+	fprintf(stderr, "        dotlockfile -u|-t\n");
 	exit(1);
 }
 
