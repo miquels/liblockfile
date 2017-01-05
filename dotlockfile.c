@@ -187,6 +187,11 @@ char *mlockname(char *user)
 	return buf;
 }
 
+void perror_exit(const char *why) {
+	fprintf(stderr, "dotlockfile: ");
+	perror(why);
+	exit(L_ERROR);
+}
 
 /*
  *	Print usage mesage and exit.
@@ -199,12 +204,49 @@ void usage(void)
 	exit(1);
 }
 
+int check_access(char *dir, gid_t gid, gid_t egid, char *lockfile, struct passwd *pwd, struct stat *st) {
+
+	/*
+	 *	Try with normal perms first.
+	 */
+	int r = eaccess_write(dir, gid, st);
+	if (gid == egid)
+		return r;
+	if (r == 0 || errno == ENOENT) {
+		if (setregid(gid, gid) < 0)
+			perror_exit("setregid(gid, gid)");
+		return r;
+	}
+
+	/*
+	 *	Perhaps with the effective group.
+	 */
+	r = eaccess_write(dir, egid, st);
+	if (r < 0 && errno == ENOENT)
+		return -1;
+	if (r == 0) {
+		if (!ismaillock(lockfile, pwd->pw_name)) {
+			errno = EPERM;
+			return -1;
+		}
+		if (setregid(-1, egid) < 0)
+			perror_exit("setregid(-1, egid)");
+		return 0;
+	}
+
+	/*
+	 *	Once more with saved group-id cleared.
+	 */
+	if (setregid(gid, gid) < 0)
+		perror_exit("setregid(gid, gid)");
+	return eaccess_write(dir, gid, st);
+}
 
 int main(int argc, char **argv)
 {
 	struct passwd	*pwd;
 	struct stat	st, st2;
-	gid_t		gid;
+	gid_t		gid, egid;
 	char		*dir, *file, *lockfile = NULL;
 	char		**cmd = NULL;
 	int 		c, r, l;
@@ -216,6 +258,18 @@ int main(int argc, char **argv)
 	int		quiet = 0;
 	int		touch = 0;
 	int		writepid = 0;
+	int		mail = 0;
+
+	/*
+	 *	Remember real and effective gid, and
+	 *	drop privs for now.
+	 */
+	if ((gid = getgid()) < 0)
+		perror_exit("getgid");
+	if ((egid = getegid()) < 0)
+		perror_exit("getegid");
+	if (setregid(-1, gid) < 0)
+		perror_exit("setregid(-1, gid)");
 
 	set_signal(SIGINT, got_signal);
 	set_signal(SIGQUIT, got_signal);
@@ -298,6 +352,9 @@ int main(int argc, char **argv)
 	if (optind < argc) {
 		if (mail)
 			usage();
+		if (setgid(gid) < 0)
+			perror_exit("setgid(gid)");
+		egid = gid;
 		cmd = argv + optind;
 	}
 
@@ -325,26 +382,19 @@ int main(int argc, char **argv)
 		perror("dotlockfile");
 		return L_ERROR;
 	}
-	gid = getgid();
-	if (eaccess_write(dir, gid, &st) < 0) {
-		if (errno == ENOENT) {
-enoent:
-			if (!quiet) fprintf(stderr,
+
+	r = check_access(dir, gid, egid, lockfile, pwd, &st);
+	if (r < 0) {
+		if (!quiet) {
+			if (errno == ENOENT) {
+				fprintf(stderr,
 				"dotlockfile: %s: no such directory\n", dir);
-			return L_TMPLOCK;
-		}
-		if ((r = eaccess_write(dir, getegid(), &st) < 0) && errno == ENOENT)
-			goto enoent;
-		if (r < 0 || !ismaillock(lockfile, pwd->pw_name)) {
-			if (!quiet) fprintf(stderr,
+			} else {
+				fprintf(stderr,
 				"dotlockfile: %s: permission denied\n", lockfile);
-			return L_TMPLOCK;
+			}
 		}
-	} else {
-		if (setgid(gid) < 0) {
-			perror("dotlockfile: setgid");
-			return L_ERROR;
-		}
+		return L_TMPLOCK;
 	}
 
 	/*
