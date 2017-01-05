@@ -1,3 +1,10 @@
+liblockfile (1.13)
+
+  * remove '-t' as option when running a command- do touchlock
+    automatically if -p was not given.
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 05 Jan 2017 23:10:35 +0100
+
 liblockfile (1.12)
 
   * update lockfile_create.3 manpage, document L_PPID

@@ -3,7 +3,7 @@
  *			Runs setgid mail so is able to lock mailboxes
  *			as well. Liblockfile can call this command.
  *
- * Version:	@(#)dotlockfile.c  1.11  03-Jan-2017  miquels@cistron.nl
+ * Version:	@(#)dotlockfile.c  1.13  05-Jan-2017  miquels@cistron.nl
  *
  *		Copyright (C) Miquel van Smoorenburg 1999-2017
  *
@@ -194,7 +194,7 @@ char *mlockname(char *user)
 void usage(void)
 {
 	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-p] <-m|lockfile>\n");
-	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] [-t] <-m|lockfile> command args...\n");
+	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] <-m|lockfile> command args...\n");
 	fprintf(stderr, "        dotlockfile -u|-t\n");
 	exit(1);
 }
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 	/*
 	 *	Options sanity check
 	 */
-	if ((cmd || lock) && (check || unlock))
+	if ((cmd || lock) && (touch || check || unlock))
 		usage();
 
 	if (writepid)
@@ -368,7 +368,7 @@ enoent:
 	/*
 	 *	Touch lock ?
 	 */
-	if (touch && !cmd)
+	if (touch)
 		return (lockfile_touch(file) < 0) ? 1 : 0;
 
 	/*
@@ -413,12 +413,12 @@ enoent:
 	/* wait for child */
 	int e, wstatus;
 	while (1) {
-		if (touch)
-			alarm(60);
+		if (!writepid)
+			alarm(30);
 		e = waitpid(pid, &wstatus, 0);
 		if (e >= 0 || errno != EINTR)
 			break;
-		if (touch)
+		if (!writepid)
 			lockfile_touch(file);
 	} while (0);
 
