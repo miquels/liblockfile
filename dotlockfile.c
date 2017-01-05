@@ -194,7 +194,7 @@ char *mlockname(char *user)
 void usage(void)
 {
 	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-p] <-m|lockfile>\n");
-	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] <-m|lockfile> command args...\n");
+	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] lockfile command args...\n");
 	fprintf(stderr, "        dotlockfile -u|-t\n");
 	exit(1);
 }
@@ -264,6 +264,7 @@ int main(int argc, char **argv)
 				perror("dotlockfile");
 				return L_ERROR;
 			}
+			mail = 1;
 			break;
 		case 'l':
 			lock = 1;
@@ -294,8 +295,11 @@ int main(int argc, char **argv)
 	/*
 	 * next arguments may be command [args...]
 	 */
-	if (optind < argc)
+	if (optind < argc) {
+		if (mail)
+			usage();
 		cmd = argv + optind;
+	}
 
 	/*
 	 *	Options sanity check

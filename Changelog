@@ -2,6 +2,9 @@ liblockfile (1.13)
 
   * remove '-t' as option when running a command- do touchlock
     automatically if -p was not given.
+  * don't allow executing a command with the -m option, not nessecary.
+    should really add a minimal setgid util for maillock(), remove setgid
+    from dotlockfile, and let it use the library maillock().
 
  -- Miquel van Smoorenburg <miquels@cistron.nl>  Thu, 05 Jan 2017 23:10:35 +0100
 
