@@ -1,4 +1,4 @@
-.TH LOCKFILE_CREATE 3  "04 June 2004" "Linux Manpage" "Linux Programmer's Manual"
+.TH LOCKFILE_CREATE 3  "05 Januari 2017" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
 lockfile_create, lockfile_remove, lockfile_touch, lockfile_check \- manage lockfiles
 .SH SYNOPSIS
@@ -20,9 +20,21 @@ function creates a lockfile in an NFS safe way.
 .PP
 If flags is set to
 .B L_PID
+or
+.B L_PPID
 then lockfile_create will not only check for an existing lockfile, but
 it will read the contents as well to see if it contains a process id
 in ASCII. If so, the lockfile is only valid if that process still exists.
+.PP
+When creating a lockfile, if
+.B L_PID
+is set in flags, then the current process' PID will be written to the
+lockfile. Sometimes it can be useful to use the parent's PID instead
+(for example, the
+.B dotlockfile
+command uses that). In such cases you can use the
+.B L_PPID
+flag instead.
 .PP
 If the lockfile is on a shared filesystem, it might have been created by
 a process on a remote host. Thus the process-id checking is useless and
