@@ -1,3 +1,11 @@
+liblockfile (1.14)
+
+  * allow '-m' option again when executing command (why disallow it)
+  * drop privs just after fork (and before execv) instead of earlier
+  * before executing command, chdir back to original working directory.
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Tue, 17 Jan 2017 13:58:25 +0100
+
 liblockfile (1.13)
 
   * remove '-t' as option when running a command- do touchlock

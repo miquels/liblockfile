@@ -3,7 +3,7 @@
  *			Runs setgid mail so is able to lock mailboxes
  *			as well. Liblockfile can call this command.
  *
- * Version:	@(#)dotlockfile.c  1.13  05-Jan-2017  miquels@cistron.nl
+ * Version:	@(#)dotlockfile.c  1.14  17-Jan-2017  miquels@cistron.nl
  *
  *		Copyright (C) Miquel van Smoorenburg 1999-2017
  *
@@ -199,7 +199,7 @@ void perror_exit(const char *why) {
 void usage(void)
 {
 	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-p] <-m|lockfile>\n");
-	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] lockfile command args...\n");
+	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] <-m|lockfile> command args...\n");
 	fprintf(stderr, "        dotlockfile -u|-t\n");
 	exit(1);
 }
@@ -258,7 +258,6 @@ int main(int argc, char **argv)
 	int		quiet = 0;
 	int		touch = 0;
 	int		writepid = 0;
-	int		mail = 0;
 
 	/*
 	 *	Remember real and effective gid, and
@@ -318,7 +317,6 @@ int main(int argc, char **argv)
 				perror("dotlockfile");
 				return L_ERROR;
 			}
-			mail = 1;
 			break;
 		case 'l':
 			lock = 1;
@@ -349,14 +347,8 @@ int main(int argc, char **argv)
 	/*
 	 * next arguments may be command [args...]
 	 */
-	if (optind < argc) {
-		if (mail)
-			usage();
-		if (setgid(gid) < 0)
-			perror_exit("setgid(gid)");
-		egid = gid;
+	if (optind < argc)
 		cmd = argv + optind;
-	}
 
 	/*
 	 *	Options sanity check
@@ -396,6 +388,13 @@ int main(int argc, char **argv)
 		}
 		return L_TMPLOCK;
 	}
+
+	/*
+	 *	Remember directory.
+	 */
+	char oldpwd[PATH_MAX];
+	if (getcwd(oldpwd, sizeof(oldpwd)) < 0)
+		perror_exit("getcwd");
 
 	/*
 	 *	Now we should be able to chdir() to the lock directory.
@@ -459,6 +458,14 @@ int main(int argc, char **argv)
 		exit(L_ERROR);
 	}
 	if (pid == 0) {
+		if (gid != egid && setregid(gid, gid) < 0) {
+			perror("setregid(gid, gid)");
+			exit(127);
+		}
+		if (chdir(oldpwd) < 0) {
+			perror(oldpwd);
+			exit(127);
+		}
 		execvp(cmd[0], cmd);
 		perror(cmd[0]);
 		exit(127);
@@ -474,7 +481,7 @@ int main(int argc, char **argv)
 			break;
 		if (!writepid)
 			lockfile_touch(file);
-	} while (0);
+	}
 
 	alarm(0);
 	lockfile_remove(file);
