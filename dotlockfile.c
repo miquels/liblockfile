@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 	 *	Remember directory.
 	 */
 	char oldpwd[PATH_MAX];
-	if (getcwd(oldpwd, sizeof(oldpwd)) < 0)
+	if (getcwd(oldpwd, sizeof(oldpwd)) == NULL)
 		perror_exit("getcwd");
 
 	/*
