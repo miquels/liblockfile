@@ -392,8 +392,15 @@ int main(int argc, char **argv)
 	/*
 	 *	Remember directory.
 	 */
-	char oldpwd[PATH_MAX];
-	if (getcwd(oldpwd, sizeof(oldpwd)) == NULL)
+#if !defined(PATH_MAX) || defined(__GLIBC__)
+	char *oldpwd = getcwd(NULL, 0);
+#else
+	char *oldpwd = malloc(PATH_MAX);
+	if (oldpwd == NULL)
+		perror_exit("malloc");
+	oldpwd = getcwd(oldpwd, PATH_MAX);
+#endif
+	if (oldpwd == NULL)
 		perror_exit("getcwd");
 
 	/*
@@ -404,6 +411,7 @@ int main(int argc, char **argv)
 	if (chdir(dir) < 0 || stat(".", &st2) < 0) {
 		if (!quiet) fprintf(stderr,
 			"dotlockfile: %s: cannot access directory\n", dir);
+		free(oldpwd);
 		return L_TMPLOCK;
 	}
 	if (st.st_ino != st2.st_ino || st.st_dev != st2.st_dev) {
@@ -415,20 +423,26 @@ int main(int argc, char **argv)
 	/*
 	 *	Simple check for a valid lockfile ?
 	 */
-	if (check)
+	if (check) {
+		free(oldpwd);
 		return (lockfile_check(file, flags) < 0) ? 1 : 0;
+	}
 
 	/*
 	 *	Touch lock ?
 	 */
-	if (touch)
+	if (touch) {
+		free(oldpwd);
 		return (lockfile_touch(file) < 0) ? 1 : 0;
+	}
 
 	/*
 	 *	Remove lockfile?
 	 */
-	if (unlock)
+	if (unlock) {
+		free(oldpwd);
 		return (lockfile_remove(file) == 0) ? 0 : 1;
+	}
 
 	/*
 	 *	No, lock.
@@ -437,11 +451,14 @@ int main(int argc, char **argv)
 	tmplock = malloc(l);
 	if (tmplock == NULL) {
 		perror("malloc");
+		free(oldpwd);
 		exit(L_ERROR);
 	}
 	r = lockfile_create_save_tmplock(file, tmplock, l, retries, flags);
-	if (r != 0 || !cmd)
+	if (r != 0 || !cmd) {
+		free(oldpwd);
 		return r;
+	}
 
 	/*
 	 *	Spawn command
@@ -455,6 +472,7 @@ int main(int argc, char **argv)
 	if (pid < 0) {
 		perror("fork");
 		lockfile_remove(file);
+		free(oldpwd);
 		exit(L_ERROR);
 	}
 	if (pid == 0) {
@@ -470,6 +488,8 @@ int main(int argc, char **argv)
 		perror(cmd[0]);
 		exit(127);
 	}
+
+	free(oldpwd);
 
 	/* wait for child */
 	int e, wstatus;
