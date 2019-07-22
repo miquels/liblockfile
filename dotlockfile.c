@@ -126,7 +126,7 @@ int ismaillock(char *lockfile, char *username)
 	len = strlen(lockfile);
 	if (len > sizeof(tmp) || len < 5)
 		return 0;
-	strncpy(tmp, lockfile, len - 5);
+	strncpy(tmp, lockfile,sizeof(tmp));
 	tmp[len - 5] = 0;
 	if (stat(tmp, &st) != 0 || st.st_uid != geteuid())
 		return 0;
