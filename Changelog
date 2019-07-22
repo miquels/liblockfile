@@ -7,6 +7,8 @@ liblockfile (1.15)
   * fix gcc warning about strncpy in ismaillock() (not an actual bug)
   * add support for systems that do not have PATH_MAX
     (fixes https://github.com/miquels/liblockfile/issues/1)
+  * rename configure.in to configure.ac and run autoconf
+    (fixes https://github.com/miquels/liblockfile/issues/2)
 
  -- Miquel van Smoorenburg <miquels@cistron.nl>  Mon, 22 Jul 2019 16:57:17 +0200
 
