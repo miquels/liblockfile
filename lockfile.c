@@ -46,6 +46,15 @@ extern int check_sleep(int);
 #endif
 
 #if !defined(LIB) || defined(MAILGROUP)
+/* eaccess_write helper */
+static int ok_or_errno(int condition, int code) {
+	if (!condition) {
+		errno = code;
+		return -1;
+	}
+	return 0;
+}
+
 /*
  *	See if we can write to the directory.
  *	Returns: -1 fail
@@ -65,29 +74,31 @@ int eaccess_write(char *fn, gid_t gid, struct stat *st)
 
 	if (stat(fn, st) != 0)
 		return -1;
-	errno = EPERM;
 
 	if (uid == 0) return 0;
 
 	if (st->st_uid == uid)
-		return (st->st_mode & 0200) ? 0 : -1;
+		return ok_or_errno(st->st_mode & 0200, EPERM);
 
 	if (st->st_gid == gid)
-		return (st->st_mode & 0020) ? 0 : -1;
+		return ok_or_errno(st->st_mode & 0020, EPERM);
 
 	if ((n = getgroups(0, NULL)) > 0) {
 		aux = malloc(n * sizeof(gid_t));
-		if (aux && getgroups(n, aux) == 0) {
+		if (aux == NULL)
+			return -1;
+		if ((n = getgroups(n, aux)) > 0) {
 			for (i = 0; i < n; i++)
 				if (st->st_gid == aux[i]) {
 					free(aux);
-					return (st->st_mode & 0020) ? 0 : -1;
+					errno = EPERM;
+					return ok_or_errno(st->st_mode & 0020, EPERM);
 				}
 		}
 		free(aux);
 	}
 
-	return (st->st_mode & 0002) ? 0 : -1;
+	return ok_or_errno(st->st_mode & 0002, EPERM);
 }
 #endif
 
