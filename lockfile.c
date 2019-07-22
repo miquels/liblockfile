@@ -285,10 +285,14 @@ int lockfile_create_save_tmplock(const char *lockfile,
 		p = tmplock;
 	else
 		p++;
-	snprintf(p, TMPLOCKFILENAMESZ, "%s%0*d%0*x%s", TMPLOCKSTR,
-		 TMPLOCKPIDSZ, (int)getpid(),
-		 TMPLOCKTIMESZ, (int)time(NULL) & 15,
-		 sysname);
+	if (snprintf(p, TMPLOCKFILENAMESZ, "%s%0*d%0*x%s", TMPLOCKSTR,
+			TMPLOCKPIDSZ, (int)getpid(),
+			TMPLOCKTIMESZ, (int)time(NULL) & 15,
+			sysname) < 0) {
+		// never happens but gets rid of gcc truncation warning.
+		errno = EOVERFLOW;
+		return L_ERROR;
+	}
 	i = umask(022);
 	fd = open(tmplock, O_WRONLY|O_CREAT|O_EXCL, 0644);
 	e = errno;
