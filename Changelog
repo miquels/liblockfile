@@ -5,6 +5,8 @@ liblockfile (1.15)
   * fix getgroups() check in lockfile.c (Thomas Finke), add some cleanups
   * fix gcc warning about snprintf in lockfile_create_save_tmplock() (not an actual bug)
   * fix gcc warning about strncpy in ismaillock() (not an actual bug)
+  * add support for systems that do not have PATH_MAX
+    (fixes https://github.com/miquels/liblockfile/issues/1)
 
  -- Miquel van Smoorenburg <miquels@cistron.nl>  Mon, 22 Jul 2019 16:57:17 +0200
 
