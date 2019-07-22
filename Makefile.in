@@ -20,6 +20,8 @@ includedir	= @includedir@
 datarootdir	= @datarootdir@
 MAILGROUP	= @MAILGROUP@
 
+VERSION		= $(shell sed -ne "1s/^liblockfile (\(.*\))/\1/p" < Changelog)
+
 all:		@TARGETS@
 install:	@INSTALL_TARGETS@
 
@@ -79,10 +81,31 @@ install_nfslib:	nfslib
 		install -m 755 nfslock.so.$(NFSVER) $(nfslockdir)
 		if test "$(DESTDIR)" = ""; then @LDCONFIG@; fi
 
+tarx:		clean
+		(tar --xform "s/^liblockfile/liblockfile-$(VERSION)/" \
+			--exclude Makefile --exclude autoconf.h --exclude maillock.h \
+			--exclude config.cache --exclude config.log --exclude config.status \
+			--exclude autom4te.cache \
+			--exclude-vcs --exclude-vcs-ignores \
+			-C .. -czf ../liblockfile.tar.gz liblockfile )
+
+tar:		tarx
+		mv ../liblockfile.tar.gz ../liblockfile-$(VERSION).tar.gz
+
+orig_tar:	tarx
+		mv ../liblockfile.tar.gz ../liblockfile_$(VERSION).orig.tar.gz
+
+tarball:	distclean
+		(tar --xform "s/^liblockfile/liblockfile-$(VERSION)/" \
+			--exclude-vcs --exclude-vcs-ignores \
+			-C .. -czf ../liblockfile-$(VERSION).tar.gz liblockfile )
+
+
 clean:
 		rm -f *.a *.o *.so *.so.* dotlockfile
 
 distclean:	clean
 		rm -f Makefile autoconf.h maillock.h \
-			config.cache config.log config.status
+			config.cache config.log config.status; \
+		rm -rf autom4te.cache
 
