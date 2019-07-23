@@ -83,17 +83,20 @@ int eaccess_write(char *fn, gid_t gid, struct stat *st)
 	if (st->st_gid == gid)
 		return ok_or_errno(st->st_mode & 0020, EPERM);
 
-	if ((n = getgroups(0, NULL)) > 0) {
+	if ((n = getgroups(0, NULL)) < 0)
+		return -1;
+
+	if (n > 0) {
 		aux = malloc(n * sizeof(gid_t));
 		if (aux == NULL)
 			return -1;
-		if ((n = getgroups(n, aux)) > 0) {
-			for (i = 0; i < n; i++)
-				if (st->st_gid == aux[i]) {
-					free(aux);
-					errno = EPERM;
-					return ok_or_errno(st->st_mode & 0020, EPERM);
-				}
+		if ((n = getgroups(n, aux)) < 0)
+			return -1;
+		for (i = 0; i < n; i++) {
+			if (st->st_gid == aux[i]) {
+				free(aux);
+				return ok_or_errno(st->st_mode & 0020, EPERM);
+			}
 		}
 		free(aux);
 	}
