@@ -22,7 +22,7 @@ MAILGROUP	= @MAILGROUP@
 
 VERSION		= $(shell sed -ne "1s/^liblockfile (\(.*\))/\1/p" < Changelog)
 
-all:		@TARGETS@
+all:		@TARGETS@ test
 install:	@INSTALL_TARGETS@
 
 static:		liblockfile.a dotlockfile
@@ -81,6 +81,13 @@ install_nfslib:	nfslib
 		install -m 755 nfslock.so.$(NFSVER) $(nfslockdir)
 		if test "$(DESTDIR)" = ""; then @LDCONFIG@; fi
 
+test:		test-stamp
+		@:
+
+test-stamp:	dotlockfile
+		./run-tests.sh
+		touch test-stamp
+
 tarx:		clean
 		(tar --xform "s/^liblockfile/liblockfile-$(VERSION)/" \
 			--exclude Makefile --exclude autoconf.h --exclude maillock.h \
@@ -102,7 +109,7 @@ tarball:	distclean
 
 
 clean:
-		rm -f *.a *.o *.so *.so.* dotlockfile
+		rm -f *.a *.o *.so *.so.* dotlockfile test-stamp
 
 distclean:	clean
 		rm -f Makefile autoconf.h maillock.h \
