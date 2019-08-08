@@ -21,13 +21,21 @@ dotlockfile -u testlock.lock
 
 # same but with a command
 dotlockfile -l -r 1 testlock.lock sleep 2 &
+PID=$!
 
 # locking again should fail
-! dotlockfile -l -r 0 testlock.lock
+if dotlockfile -l -r 0 testlock.lock
+then
+	if kill -0 $PID 2>/dev/null
+	then
+		echo "double lock while running command"
+		exit 1
+	fi
+fi
 
 # lock should be gone when command completes
 wait
-[ ! -f testlock.lock ] || { echo "lockfile still exists after unlock"; exit 1; }
+[ ! -f testlock.lock ] || { echo "lockfile still exists after running cmd"; exit 1; }
 
 echo "tests OK"
 

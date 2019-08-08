@@ -22,7 +22,7 @@ MAILGROUP	= @MAILGROUP@
 
 VERSION		= $(shell sed -ne "1s/^liblockfile (\(.*\))/\1/p" < Changelog)
 
-all:		@TARGETS@ test
+all:		@TARGETS@
 install:	@INSTALL_TARGETS@
 
 static:		liblockfile.a dotlockfile
