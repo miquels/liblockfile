@@ -19,7 +19,6 @@
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,11 +42,12 @@ extern char *optarg;
 extern int optind;
 #endif
 
-extern int eaccess_write(char *, gid_t, struct stat *);
-extern int lockfile_create_save_tmplock(const char *lockfile,
-                char *tmplock, int tmplocksz, int retries, int flags);
+extern int is_maillock(const char *lockfile);
+extern int lockfile_create_set_tmplock(const char *lockfile,
+			volatile char **tmplock, int retries, int flags);
 
-char *tmplock;
+static volatile char *tmplock;
+static int quiet;
 
 /*
  *	If we got SIGINT, SIGQUIT, SIGHUP, remove the
@@ -56,7 +56,7 @@ char *tmplock;
 void got_signal(int sig)
 {
 	if (tmplock && tmplock[0])
-		unlink(tmplock);
+		unlink((char *)tmplock);
 	signal(sig, SIG_DFL);
 	raise(sig);
 }
@@ -100,40 +100,6 @@ int check_sleep(int sleeptime)
 	}
 	return 0;
 }
-
-
-/*
- *	Is this a lock for a mailbox? We check if the filename
- *	is in ..../USERNAME.lock format, and if we own the file
- *	that we want to lock.
- */
-int ismaillock(char *lockfile, char *username)
-{
-	struct stat	st;
-	char		*p;
-	char		tmp[1024];
-	int		len;
-
-	sprintf(tmp, "%.120s.lock", username);
-	if ((p = strrchr(lockfile, '/')) != NULL)
-		p++;
-	else
-		p = lockfile;
-
-	if (strcmp(p, tmp) != 0)
-		return 0;
-
-	len = strlen(lockfile);
-	if (len > sizeof(tmp) || len < 5)
-		return 0;
-	strncpy(tmp, lockfile,sizeof(tmp));
-	tmp[len - 5] = 0;
-	if (stat(tmp, &st) != 0 || st.st_uid != geteuid())
-		return 0;
-
-	return 1;
-}
-
 
 /*
  *	Split a filename up in  file and directory.
@@ -188,8 +154,10 @@ char *mlockname(char *user)
 }
 
 void perror_exit(const char *why) {
-	fprintf(stderr, "dotlockfile: ");
-	perror(why);
+	if (!quiet) {
+		fprintf(stderr, "dotlockfile: ");
+		perror(why);
+	}
 	exit(L_ERROR);
 }
 
@@ -204,58 +172,18 @@ void usage(void)
 	exit(1);
 }
 
-int check_access(char *dir, gid_t gid, gid_t egid, char *lockfile, struct passwd *pwd, struct stat *st) {
-
-	/*
-	 *	Try with normal perms first.
-	 */
-	int r = eaccess_write(dir, gid, st);
-	if (gid == egid)
-		return r;
-	if (r == 0 || errno == ENOENT) {
-		if (setregid(gid, gid) < 0)
-			perror_exit("setregid(gid, gid)");
-		return r;
-	}
-
-	/*
-	 *	Perhaps with the effective group.
-	 */
-	r = eaccess_write(dir, egid, st);
-	if (r < 0 && errno == ENOENT)
-		return -1;
-	if (r == 0) {
-		if (!ismaillock(lockfile, pwd->pw_name)) {
-			errno = EPERM;
-			return -1;
-		}
-		if (setregid(-1, egid) < 0)
-			perror_exit("setregid(-1, egid)");
-		return 0;
-	}
-
-	/*
-	 *	Once more with saved group-id cleared.
-	 */
-	if (setregid(gid, gid) < 0)
-		perror_exit("setregid(gid, gid)");
-	return eaccess_write(dir, gid, st);
-}
-
 int main(int argc, char **argv)
 {
 	struct passwd	*pwd;
-	struct stat	st, st2;
 	gid_t		gid, egid;
-	char		*dir, *file, *lockfile = NULL;
+	char		*lockfile = NULL;
 	char		**cmd = NULL;
-	int 		c, r, l;
+	int 		c, r;
 	int		retries = 5;
 	int		flags = 0;
 	int		lock = 0;
 	int		unlock = 0;
 	int		check = 0;
-	int		quiet = 0;
 	int		touch = 0;
 	int		writepid = 0;
 
@@ -267,22 +195,17 @@ int main(int argc, char **argv)
 		perror_exit("getgid");
 	if ((egid = getegid()) < 0)
 		perror_exit("getegid");
-	if (setregid(-1, gid) < 0)
-		perror_exit("setregid(-1, gid)");
+	egid = 8;
+	if (gid != egid) {
+		if (0 && setregid(-1, gid) < 0) // XXX
+			perror_exit("setregid(-1, gid)");
+	}
 
 	set_signal(SIGINT, got_signal);
 	set_signal(SIGQUIT, got_signal);
 	set_signal(SIGHUP, got_signal);
 	set_signal(SIGTERM, got_signal);
 	set_signal(SIGPIPE, got_signal);
-
-	/*
-	 *	Get username for mailbox-locks.
-	 */
-	if ((pwd = getpwuid(geteuid())) == NULL) {
-		fprintf(stderr, "dotlockfile: You don't exist. Go away.\n");
-		return L_ERROR;
-	}
 
 	/*
 	 *	Process the options.
@@ -301,8 +224,9 @@ int main(int argc, char **argv)
 			retries = atoi(optarg);
 			if (retries <= 0 &&
 			    retries != -1 && strcmp(optarg, "0") != 0) {
-				fprintf(stderr,
-				    "dotlockfile: -r %s: invalid argument\n",
+				if (!quiet)
+					fprintf(stderr, "dotlockfile: "
+						"-r %s: invalid argument\n",
 						optarg);
 				return L_ERROR;
 			}
@@ -312,9 +236,15 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'm':
+			if ((pwd = getpwuid(geteuid())) == NULL) {
+				if (!quiet)
+					fprintf(stderr, "dotlockfile: You don't exist. Go away.\n");
+				return L_ERROR;
+			}
 			lockfile = mlockname(pwd->pw_name);
 			if (!lockfile) {
-				perror("dotlockfile");
+				if (!quiet)
+					perror("dotlockfile");
 				return L_ERROR;
 			}
 			break;
@@ -361,107 +291,99 @@ int main(int argc, char **argv)
 
 #ifdef MAXPATHLEN
 	if (strlen(lockfile) >= MAXPATHLEN) {
-		fprintf(stderr, "dotlockfile: %s: name too long\n", lockfile);
+		if (!quiet)
+			fprintf(stderr, "dotlockfile: %s: name too long\n", lockfile);
 		return L_NAMELEN;
 	}
 #endif
 
 	/*
-	 *	See if we can write into the lock directory.
+	 *	Check if we run setgid.
 	 */
-	r = fn_split(lockfile, &file, &dir);
-	if (r != L_SUCCESS) {
-		perror("dotlockfile");
-		return L_ERROR;
-	}
-
-	r = check_access(dir, gid, egid, lockfile, pwd, &st);
-	if (r < 0) {
-		if (!quiet) {
-			if (errno == ENOENT) {
-				fprintf(stderr,
-				"dotlockfile: %s: no such directory\n", dir);
-			} else {
-				fprintf(stderr,
-				"dotlockfile: %s: permission denied\n", lockfile);
-			}
-		}
-		return L_TMPLOCK;
-	}
-
-	/*
-	 *	Remember directory.
-	 */
-#if !defined(PATH_MAX) || defined(__GLIBC__)
-	char *oldpwd = getcwd(NULL, 0);
+	int cwd_fd = -1;
+	int need_privs = 0;
+#ifdef MAILGROUP
+	if (gid != egid) {
+		/*
+		 *	See if the requested lock is for a mailbox.
+		 *	First, remember currect working directory.
+		 */
+#ifdef O_PATH
+		cwd_fd = open(".", O_PATH|O_CLOEXEC);
 #else
-	char *oldpwd = malloc(PATH_MAX);
-	if (oldpwd == NULL)
-		perror_exit("malloc");
-	oldpwd = getcwd(oldpwd, PATH_MAX);
+		cwd_fd = open(".", O_RDONLY|O_CLOEXEC);
 #endif
-	if (oldpwd == NULL)
-		perror_exit("getcwd");
+		if (cwd_fd < 0) {
+			if (!quiet)
+				fprintf(stderr, "dotlockfile: opening \".\": %s\n",
+					strerror(errno));
+			return L_ERROR;
+		}
+		/*
+		 *	Now change directory to the directory the lockfile is in.
+		 */
+		char *file, *dir;
+		r = fn_split(lockfile, &file, &dir);
+		if (r != L_SUCCESS) {
+			if (!quiet)
+				perror("dotlockfile");
+			return L_ERROR;
+		}
+		if (chdir(dir) != 0) {
+			if (!quiet)
+				fprintf(stderr, "dotlockfile: %s: %s\n", dir, strerror(errno));
+			return L_ERROR;
+		}
+
+		lockfile = file;
+		need_privs = is_maillock(lockfile);
+	}
+#endif
 
 	/*
-	 *	Now we should be able to chdir() to the lock directory.
-	 *	When we stat("."), it should be the same as at the
-	 *	eaccess_write() check or someone played symlink() games on us.
+	 *	See if we actually need to run setgid.
 	 */
-	if (chdir(dir) < 0 || stat(".", &st2) < 0) {
-		if (!quiet) fprintf(stderr,
-			"dotlockfile: %s: cannot access directory\n", dir);
-		free(oldpwd);
-		return L_TMPLOCK;
-	}
-	if (st.st_ino != st2.st_ino || st.st_dev != st2.st_dev) {
-		if (!quiet) fprintf(stderr,
-			"dotlockfile: %s: directory changed underneath us!\n", dir);
-		return L_TMPLOCK;
+	if (need_privs) {
+		if (0 && setregid(gid, egid) != 0) // XXX
+			perror_exit("setregid");
+	} else {
+		if (gid != egid && setgid(gid) != 0)
+			perror_exit("setgid");
 	}
 
 	/*
 	 *	Simple check for a valid lockfile ?
 	 */
-	if (check) {
-		free(oldpwd);
-		return (lockfile_check(file, flags) < 0) ? 1 : 0;
-	}
+	if (check)
+		return (lockfile_check(lockfile, flags) < 0) ? 1 : 0;
+
 
 	/*
 	 *	Touch lock ?
 	 */
-	if (touch) {
-		free(oldpwd);
-		return (lockfile_touch(file) < 0) ? 1 : 0;
-	}
+	if (touch)
+		return (lockfile_touch(lockfile) < 0) ? 1 : 0;
 
 	/*
 	 *	Remove lockfile?
 	 */
-	if (unlock) {
-		free(oldpwd);
-		return (lockfile_remove(file) == 0) ? 0 : 1;
-	}
+	if (unlock)
+		return (lockfile_remove(lockfile) == 0) ? 0 : 1;
+
 
 	/*
 	 *	No, lock.
 	 */
-	l = strlen(file) + 32 + 1;
-	tmplock = malloc(l);
-	if (tmplock == NULL) {
-		perror("malloc");
-		free(oldpwd);
-		exit(L_ERROR);
-	}
-	r = lockfile_create_save_tmplock(file, tmplock, l, retries, flags);
-	if (r != 0 || !cmd) {
-		free(oldpwd);
+	r = lockfile_create_set_tmplock(lockfile, &tmplock, retries, flags);
+	if (r != 0 || !cmd)
 		return r;
-	}
+
 
 	/*
-	 *	Spawn command
+	 *	Spawn command.
+	 *
+	 *	Using an empty signal handler means that we ignore the
+	 *	signal, but that it's restored to SIG_DFL at execve().
 	 */
 	set_signal(SIGINT, ignore_signal);
 	set_signal(SIGQUIT, ignore_signal);
@@ -470,26 +392,30 @@ int main(int argc, char **argv)
 
 	pid_t pid = fork();
 	if (pid < 0) {
-		perror("fork");
-		lockfile_remove(file);
-		free(oldpwd);
+		if (!quiet)
+			perror("fork");
+		lockfile_remove(lockfile);
 		exit(L_ERROR);
 	}
 	if (pid == 0) {
-		if (gid != egid && setregid(gid, gid) < 0) {
-			perror("setregid(gid, gid)");
+		/* drop setgid */
+		if (gid != egid && setgid(gid) < 0) {
+			perror("setgid");
 			exit(127);
 		}
-		if (chdir(oldpwd) < 0) {
-			perror(oldpwd);
-			exit(127);
+		/* restore current working directory */
+		if (cwd_fd >= 0) {
+			if (fchdir(cwd_fd) < 0) {
+				perror("dotlockfile: restoring cwd:");
+				exit(127);
+			}
+			close(cwd_fd);
 		}
+		/* exec */
 		execvp(cmd[0], cmd);
 		perror(cmd[0]);
 		exit(127);
 	}
-
-	free(oldpwd);
 
 	/* wait for child */
 	int e, wstatus;
@@ -500,11 +426,11 @@ int main(int argc, char **argv)
 		if (e >= 0 || errno != EINTR)
 			break;
 		if (!writepid)
-			lockfile_touch(file);
+			lockfile_touch(lockfile);
 	}
 
 	alarm(0);
-	lockfile_remove(file);
+	lockfile_remove(lockfile);
 
 	return 0;
 }

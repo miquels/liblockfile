@@ -43,12 +43,17 @@ nfslock.so.$(NFSVER):	nfslock.o
 dotlockfile:	dotlockfile.o xlockfile.o
 		$(CC) $(LDFLAGS) -o dotlockfile dotlockfile.o xlockfile.o
 
+dotlockfile.o:	dotlockfile.c
+		$(CC) $(CFLAGS) -DLOCKPROG=\"$(bindir)/dotlockfile\" \
+			-c dotlockfile.c
+
 lockfile.o:	lockfile.c
 		$(CC) $(CFLAGS) -DLIB -DLOCKPROG=\"$(bindir)/dotlockfile\" \
 			-c lockfile.c
 
 xlockfile.o:	lockfile.c
-		$(CC) $(CFLAGS) -c lockfile.c -o xlockfile.o
+		$(CC) $(CFLAGS) -DLOCKPROG=\"$(bindir)/dotlockfile\" \
+			-c lockfile.c -o xlockfile.o
 
 install_static:	static install_common
 		install -d -m 755 -g root -p $(libdir)

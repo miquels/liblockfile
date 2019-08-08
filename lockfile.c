@@ -45,116 +45,74 @@ static int  islocked = 0;
 extern int check_sleep(int);
 #endif
 
-#if !defined(LIB) || defined(MAILGROUP)
-/* eaccess_write helper */
-static int ok_or_errno(int condition, int code) {
-	if (!condition) {
-		errno = code;
-		return -1;
-	}
-	return 0;
+#ifdef MAILGROUP
+/*
+ *	Get the id of the mailgroup, by statting the helper program.
+ *	If it is setgroup-id, then the group is the mailgroup.
+ */
+static int mailgid()
+{
+	struct stat st;
+
+	if (stat(LOCKPROG, &st) != 0)
+		return (gid_t)-1;
+	if ((st.st_mode & 02000) == 0)
+		return (gid_t)-1;
+	return st.st_gid;
 }
 
 /*
- *	See if we can write to the directory.
- *	Returns: -1 fail
- *		  0 OK writable
+ *	Is this a lock for a mailbox? Check:
+ *	- is the file in /path/to/USERNAME.lock format
+ *	- is /path/to/USERNAME present and owned by us
+ *	- is /path/to writable by group mail
+ *
+ *	To be safe in a setgid program, chdir() into the lockfile
+ *	directory first, then pass in the basename of the lockfile.
  */
 #ifdef LIB
 static
 #endif
-int eaccess_write(char *fn, gid_t gid, struct stat *st)
+int is_maillock(const char *lockfile)
 {
-	struct stat	tmp;
-	uid_t		uid = geteuid();
-	gid_t		*aux;
-	int		n, i;
-
-	if (st == NULL) st = &tmp;
-
-	if (stat(fn, st) != 0)
-		return -1;
-
-	if (uid == 0) return 0;
-
-	if (st->st_uid == uid)
-		return ok_or_errno(st->st_mode & 0200, EPERM);
-
-	if (st->st_gid == gid)
-		return ok_or_errno(st->st_mode & 0020, EPERM);
-
-	if ((n = getgroups(0, NULL)) < 0)
-		return -1;
-
-	if (n > 0) {
-		aux = malloc(n * sizeof(gid_t));
-		if (aux == NULL)
-			return -1;
-		if ((n = getgroups(n, aux)) < 0)
-			return -1;
-		for (i = 0; i < n; i++) {
-			if (st->st_gid == aux[i]) {
-				free(aux);
-				return ok_or_errno(st->st_mode & 0020, EPERM);
-			}
-		}
-		free(aux);
-	}
-
-	return ok_or_errno(st->st_mode & 0002, EPERM);
-}
-#endif
-
-#if defined(LIB) && defined(MAILGROUP)
-/*
- *	Can we write to the directory of the lockfile ?
- */
-static int need_extern(const char *file)
-{
-	gid_t		egid = getegid();
 	struct stat	st;
-	static gid_t	mailgid = -1;
-	char		*dir;
+	gid_t		gid;
+	char		tmp[1024];
 	char		*p;
-	int             ret;
 
-	/*
-	 *	Find directory.
-	 */
-	if ((dir = (char *)malloc(strlen(file) + 1)) == NULL)
-		return L_ERROR;
-	strcpy(dir, file);
-	if ((p = strrchr(dir, '/')) != NULL)
+	/* remove .lock suffix */
+	strncpy(tmp, lockfile, sizeof(tmp) - 1);
+	tmp[sizeof(tmp) - 1] = 0;
+	if ((p = strrchr(tmp, '.')) == NULL || strcmp(p, ".lock") != 0)
+		return 0;
+	*p = 0;
+
+	/* file to lock must exist, and must be owned by us */
+	if (lstat(tmp, &st) != 0 ||
+	    (st.st_mode & S_IFMT) != S_IFREG || st.st_uid != getuid())
+		return 0;
+
+	/* Directory this file is in must be writable by group mail. */
+	if ((gid = mailgid()) == (gid_t)-1)
+		return 0;
+	if ((p = strrchr(tmp, '/')) != NULL)
 		*p = 0;
 	else
-		strcpy(dir, ".");
-	if (eaccess_write(dir, egid, NULL) >= 0) {
-		free(dir);
+		strncpy(tmp, ".", sizeof(tmp));
+	if (stat(tmp, &st) != 0 || st.st_gid != gid || (st.st_mode & 0020) == 0)
 		return 0;
-	}
 
-	/*
-	 *	See if accessible for group mail. We find out what
-	 *	"group mail" is by statting LOCKPROG, that saves us
-	 *	from having to call getgrgid() in a library.
-	 */
-	if (mailgid == (gid_t)-1) {
-		if (stat(LOCKPROG, &st) < 0 || !(st.st_mode & S_ISGID))
-			return 0;
-		mailgid = st.st_gid;
-	}
-	ret = eaccess_write(dir, mailgid, NULL) >= 0;
-	free (dir);
-	return ret;
+	return 1;
 }
 
+#ifdef LIB
 /*
  *	Call external program to do the actual locking.
  */
-static int do_extern(char *opt, const char *lockfile, int retries, int flags)
+static int run_helper(char *opt, const char *lockfile, int retries, int flags)
 {
 	sigset_t	set, oldset;
-	char		buf[4];
+	char		buf[8];
 	pid_t		pid, n;
 	int		st;
 
@@ -207,8 +165,9 @@ static int do_extern(char *opt, const char *lockfile, int retries, int flags)
 
 	return WEXITSTATUS(st);
 }
+#endif /* LIB*/
 
-#endif
+#endif /* MAILGROUP */
 
 #define TMPLOCKSTR		".lk"
 #define TMPLOCKSTRSZ		strlen(TMPLOCKSTR)
@@ -218,26 +177,10 @@ static int do_extern(char *opt, const char *lockfile, int retries, int flags)
 #define TMPLOCKFILENAMESZ	(TMPLOCKSTRSZ + TMPLOCKPIDSZ + \
 				 TMPLOCKTIMESZ + TMPLOCKSYSNAMESZ)
 
-/*
- *	Create a lockfile.
- */
-#ifdef LIB
-static
-#endif
-int lockfile_create_save_tmplock(const char *lockfile,
-		char *tmplock, int tmplocksz, int retries, int flags)
+static int lockfilename(const char *lockfile, char *tmplock, int tmplocksz)
 {
-	struct stat	st, st1;
 	char		sysname[256];
-	char		pidbuf[40];
 	char		*p;
-	pid_t		pid = 0;
-	int		sleeptime = 0;
-	int		statfailed = 0;
-	int		fd;
-	int		i, e, pidlen;
-	int		dontsleep = 1;
-	int		tries = retries + 1;
 
 #ifdef MAXPATHLEN
 	/*
@@ -251,26 +194,6 @@ int lockfile_create_save_tmplock(const char *lockfile,
 
 	if (strlen(lockfile) + TMPLOCKFILENAMESZ + 1 > tmplocksz) {
 		errno = EINVAL;
-		return L_ERROR;
-	}
-
-#if defined(LIB) && defined(MAILGROUP)
-	if (need_extern(lockfile))
-		return do_extern("-l", lockfile, retries, flags);
-#endif
-
-	if (flags & L_PID)
-		pid = getpid();
-	if (flags & L_PPID) {
-		pid = getppid();
-		if (pid == 1) {
-			/* orphaned */
-			return L_ORPHANED;
-		}
-	}
-	pidlen = snprintf(pidbuf, sizeof(pidbuf), "%d\n", pid);
-	if (pidlen > sizeof(pidbuf) - 1) {
-		errno = EOVERFLOW;
 		return L_ERROR;
 	}
 
@@ -296,17 +219,61 @@ int lockfile_create_save_tmplock(const char *lockfile,
 		errno = EOVERFLOW;
 		return L_ERROR;
 	}
-	i = umask(022);
-	fd = open(tmplock, O_WRONLY|O_CREAT|O_EXCL, 0644);
-	e = errno;
-	umask(i);
+
+	return 0;
+}
+
+/*
+ *	Create a lockfile.
+ */
+static int lockfile_create_save_tmplock(const char *lockfile,
+		char *tmplock, int tmplocksz,
+		volatile char **xtmplock,
+		int retries, int flags)
+{
+	struct stat	st, st1;
+	char		pidbuf[40];
+	pid_t		pid = 0;
+	int		sleeptime = 0;
+	int		statfailed = 0;
+	int		fd;
+	int		i, e, pidlen;
+	int		dontsleep = 1;
+	int		tries = retries + 1;
+
+	/* decide which PID to write to the lockfile */
+	if (flags & L_PID)
+		pid = getpid();
+	if (flags & L_PPID) {
+		pid = getppid();
+		if (pid == 1) {
+			/* orphaned */
+			return L_ORPHANED;
+		}
+	}
+	pidlen = snprintf(pidbuf, sizeof(pidbuf), "%d\n", pid);
+	if (pidlen > sizeof(pidbuf) - 1) {
+		errno = EOVERFLOW;
+		return L_ERROR;
+	}
+
+	/* create temporary lockfile */
+	if ((i = lockfilename(lockfile, tmplock, tmplocksz)) != 0)
+		return i;
+	if (xtmplock)
+		*xtmplock = tmplock;
+	fd = open(tmplock, O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC, 0644);
 	if (fd < 0) {
-		tmplock[0] = 0;
-		errno = e;
+		/* permission denied? perhaps try suid helper */
+#if defined(LIB) && defined(MAILGROUP)
+		if (errno == EACCES && is_maillock(lockfile))
+			return run_helper("-l", lockfile, retries, flags);
+#endif
 		return L_TMPLOCK;
 	}
 	i = write(fd, pidbuf, pidlen);
 	e = errno;
+
 	if (close(fd) != 0) {
 		e = errno;
 		i = -1;
@@ -404,7 +371,10 @@ int lockfile_create_save_tmplock(const char *lockfile,
 	return L_MAXTRYS;
 }
 
-int lockfile_create(const char *lockfile, int retries, int flags)
+#ifdef LIB
+static
+#endif
+int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, int retries, int flags)
 {
 	char *tmplock;
 	int l, r, e;
@@ -414,12 +384,21 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 		return L_ERROR;
 	tmplock[0] = 0;
 	r = lockfile_create_save_tmplock(lockfile,
-						tmplock, l, retries, flags);
+						tmplock, l, xtmplock, retries, flags);
+	if (xtmplock)
+		*xtmplock = NULL;
 	e = errno;
 	free(tmplock);
 	errno = e;
 	return r;
 }
+
+#ifdef LIB
+int lockfile_create(const char *lockfile, int retries, int flags)
+{
+	return lockfile_create_set_tmplock(lockfile, NULL, retries, flags);
+}
+#endif
 
 /*
  *	See if a valid lockfile is present.
@@ -489,11 +468,14 @@ int lockfile_check(const char *lockfile, int flags)
  */
 int lockfile_remove(const char *lockfile)
 {
+	if (unlink(lockfile) < 0) {
 #if defined(LIB) && defined(MAILGROUP)
-	if (need_extern(lockfile))
-		return do_extern("-u", lockfile, 0, 0);
+		if (errno == EACCES && is_maillock(lockfile))
+			return run_helper("-u", lockfile, 0, 0);
 #endif
-	return (unlink(lockfile) < 0 && errno != ENOENT) ? -1 : 0;
+		return errno == ENOENT ? 0 : -1;
+	}
+	return 0;
 }
 
 /*
