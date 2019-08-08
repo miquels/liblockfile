@@ -195,9 +195,8 @@ int main(int argc, char **argv)
 		perror_exit("getgid");
 	if ((egid = getegid()) < 0)
 		perror_exit("getegid");
-	egid = 8;
 	if (gid != egid) {
-		if (0 && setregid(-1, gid) < 0) // XXX
+		if (setregid(-1, gid) < 0)
 			perror_exit("setregid(-1, gid)");
 	}
 
@@ -344,7 +343,7 @@ int main(int argc, char **argv)
 	 *	See if we actually need to run setgid.
 	 */
 	if (need_privs) {
-		if (0 && setregid(gid, egid) != 0) // XXX
+		if (setregid(gid, egid) != 0)
 			perror_exit("setregid");
 	} else {
 		if (gid != egid && setgid(gid) != 0)
