@@ -1,3 +1,14 @@
+liblockfile (1.16)
+
+  * lockfile.c: remove all the permission checking in the normal case.
+    Only if creating the tempfile / removing the lockfile returns EACCESS,
+    check to see if this is a mail-lockfile, if so launch helper.
+  * dotlockfile.c: use same mail-lockfile check as lockfile.c, but a
+    bit more strict.
+  * dotlockfile: actually honor -q flag (quiet) everywhere
+
+ -- Miquel van Smoorenburg <miquels@cistron.nl>  Mon, 29 Jul 2019 19:31:09 +0200
+
 liblockfile (1.15)
 
   * dotlockfile.1: Fix groff syntax (from 1.14-1.1 debian NMU by Mattia Rizzolo <mattia@debian.org>)
