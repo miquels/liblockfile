@@ -22,6 +22,7 @@ dotlockfile -u testlock.lock
 # same but with a command
 dotlockfile -l -r 1 testlock.lock sleep 2 &
 PID=$!
+sleep 1
 
 # locking again should fail
 if dotlockfile -l -r 0 testlock.lock
