@@ -38,5 +38,29 @@ fi
 wait
 [ ! -f testlock.lock ] || { echo "lockfile still exists after running cmd"; exit 1; }
 
+
+# locking twice should retry, with -s making the retry time 1 second.
+# and -B making it no more than 2 seconds (rather than 3)
+dotlockfile -l -r 0 testlock.lock
+dotlockfile -l -s -B testlock.lock /bin/true &
+PID=$!
+
+pre_time=$(date +%s)
+
+# Wait 1.5 seconds to make sure at least one retry cycle passes
+sleep 1.5
+
+# unlock, then check that test lock file is eventually acquired
+dotlockfile -u testlock.lock
+
+wait
+
+post_time=$(date +%s)
+time=`expr $post_time - $pre_time`
+echo $time
+# If it took less than 2 seconds, that's a bug.
+[ "$time" = "2" ] || { echo "lockfile should take 2 seconds to be replaced."; exit 1; }
+[ ! -f testlock.lock ] || { echo "lockfile still exists after running cmd"; exit 1; }
+
 echo "tests OK"
 
