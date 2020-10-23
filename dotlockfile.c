@@ -166,8 +166,8 @@ void perror_exit(const char *why) {
  */
 void usage(void)
 {
-	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-p] <-m|lockfile>\n");
-	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] <-m|lockfile> command args...\n");
+	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-s] [-B] [-p] <-m|lockfile>\n");
+	fprintf(stderr, "        dotlockfile -l [-r retries] [-s] [-B] [-p] <-m|lockfile> command args...\n");
 	fprintf(stderr, "        dotlockfile -u|-t\n");
 	exit(1);
 }
@@ -186,6 +186,8 @@ int main(int argc, char **argv)
 	int		check = 0;
 	int		touch = 0;
 	int		writepid = 0;
+	int		shortwait = 0;
+	int		nobackoff = 0;
 
 	/*
 	 *	Remember real and effective gid, and
@@ -209,7 +211,7 @@ int main(int argc, char **argv)
 	/*
 	 *	Process the options.
 	 */
-	while ((c = getopt(argc, argv, "+qpNr:mluct")) != EOF) switch(c) {
+	while ((c = getopt(argc, argv, "+qpNr:mluctsB")) != EOF) switch(c) {
 		case 'q':
 			quiet = 1;
 			break;
@@ -259,6 +261,12 @@ int main(int argc, char **argv)
 		case 't':
 			touch = 1;
 			break;
+		case 's':
+			shortwait = 1;
+			break;
+		case 'B':
+			nobackoff = 1;
+			break;
 		default:
 			usage();
 			break;
@@ -287,6 +295,12 @@ int main(int argc, char **argv)
 
 	if (writepid)
 		flags |= (cmd ? L_PID : L_PPID);
+
+	if (shortwait)
+		flags |= L_SHORTWAIT;
+
+	if (nobackoff)
+		flags |= L_NOBACKOFF;
 
 #ifdef MAXPATHLEN
 	if (strlen(lockfile) >= MAXPATHLEN) {

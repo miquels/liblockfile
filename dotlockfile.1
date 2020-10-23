@@ -7,6 +7,8 @@ dotlockfile \- Utility to manage lockfiles
 .RB [ \-r
 .IR retries ]
 .RB [ \-p ]
+.RB [ \-s ]
+.RB [ \-B ]
 .RB < \-m \ |
 .IR lockfile >
 .br
@@ -15,6 +17,8 @@ dotlockfile \- Utility to manage lockfiles
 .RB [ \-r
 .IR retries ]
 .RB [ \-p ]
+.RB [ \-s ]
+.RB [ \-B ]
 .RB < \-m \ |
 .IR lockfile >
 .IR cmd "\ args \&...\&"
@@ -76,12 +80,17 @@ and has been touched less than 5\ minutes ago (timestamp is younger than
 The number of times
 .B dotlockfile
 retries to acquire the lock if it failed the first time before giving up.
-The initial sleep after failing to acquire the lock is 5\ seconds.
+By default, the initial sleep after failing to acquire the lock is 5\ seconds.
 After each retry the sleep interval is increased incrementally by 5\ seconds
 up to a maximum sleep of 60\ seconds between tries.
 The default number of retries is 5.
 To try only once, use "\fB\-r 0\fR".
 To try indefinitely, use "\fB\-r \-1\fR".
+.IP "\fB\-s\fR"
+Use a shorter sleep period of 1\ second, rather than the default 5\ seconds.
+.IP "\fB\-B\fR"
+Sleep for a constant period of time between each retry, rather than
+incrementally increasing the wait time.
 .IP "\fB\-u\fR"
 Remove a lockfile.
 .IP "\fB\-t\fR"
