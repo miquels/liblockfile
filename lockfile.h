@@ -40,8 +40,10 @@ int	lockfile_check(const char *lockfile, int flags);
 /*
  *	Flag values for lockfile_create()
  */
-#define L_PID		16	/* Put PID in lockfile			*/
-#define L_PPID		32	/* Put PPID in lockfile			*/
+#define L_PID		16	/* Put PID in lockfile						*/
+#define L_PPID		32	/* Put PPID in lockfile						*/
+#define L_SHORTWAIT	64	/* Only wait 1 second between retries		*/
+#define L_NOBACKOFF	128	/* Don't increase time between each retry	*/
 
 #ifdef  __cplusplus
 }

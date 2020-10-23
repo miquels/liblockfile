@@ -94,7 +94,7 @@ int check_sleep(int sleeptime)
 	if (ppid == 0) ppid = getppid();
 
 	for (i = 0; i < sleeptime; i += 5) {
-		sleep(5);
+		sleep(1);
 		if (kill(ppid, 0) < 0 && errno == ESRCH)
 			return L_ERROR;
 	}

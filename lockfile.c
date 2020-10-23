@@ -235,6 +235,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 	char		pidbuf[40];
 	pid_t		pid = 0;
 	int		sleeptime = 0;
+	int		sleepinterval = 5;
 	int		statfailed = 0;
 	int		fd;
 	int		i, e, pidlen;
@@ -251,6 +252,9 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 			return L_ORPHANED;
 		}
 	}
+
+	/* If L_SHORTWAIT set, sleep interval should be shorter */
+	if (flags & L_SHORTWAIT) sleepinterval = 1;
 	pidlen = snprintf(pidbuf, sizeof(pidbuf), "%d\n", pid);
 	if (pidlen > sizeof(pidbuf) - 1) {
 		errno = EOVERFLOW;
@@ -291,7 +295,9 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 	for (i = 0; i < tries && tries > 0; i++) {
 
 		if (!dontsleep) {
-			sleeptime += 5;
+			if (flags & L_NOBACKOFF) sleeptime = sleepinterval;
+			else sleeptime = sleeptime + sleepinterval;
+
 			if (sleeptime > 60) sleeptime = 60;
 #ifdef LIB
 			sleep(sleeptime);
