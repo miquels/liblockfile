@@ -3,9 +3,7 @@
  *		This file also holds the implementation for
  *		the Svr4 maillock functions.
  *
- * Version:	@(#)lockfile.c  1.06  04-Jun-2004  miquels@cistron.nl
- *
- *		Copyright (C) Miquel van Smoorenburg 1997,1998,1999,2004.
+ *		Copyright (C) Miquel van Smoorenburg and contributors 1997-2021.
  *
  *		This library is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU Library General Public

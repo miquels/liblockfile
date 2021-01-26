@@ -3,9 +3,7 @@
  *			Runs setgid mail so is able to lock mailboxes
  *			as well. Liblockfile can call this command.
  *
- * Version:	@(#)dotlockfile.c  1.14  17-Jan-2017  miquels@cistron.nl
- *
- *		Copyright (C) Miquel van Smoorenburg 1999-2017
+ *		Copyright (C) Miquel van Smoorenburg and contributors 1999-2021
  *
  *		This program is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU General Public License

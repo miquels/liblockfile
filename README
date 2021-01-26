@@ -39,6 +39,3 @@ lockfile_touch,
 lockfile_check -		lockfile_create.3
 
 
-
-    README  1.00  17-Apr-1999  Miquel van Smoorenburg <miquels@cistron.nl>
-

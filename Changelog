@@ -1,3 +1,13 @@
+liblockfile (1.17)
+
+  * Allow passing through the child exit code
+  * Document -q
+  * remove cistron.nl email address
+
+ -- Miquel van Smoorenburg Wed, 27 Jan 2021 00:33:10 +0100
+
+    v1.16
+
 liblockfile (1.16)
 
   * lockfile.c: remove all the permission checking in the normal case.
