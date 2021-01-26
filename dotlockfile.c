@@ -186,6 +186,7 @@ int main(int argc, char **argv)
 	int		check = 0;
 	int		touch = 0;
 	int		writepid = 0;
+	int		passthrough = 0;
 
 	/*
 	 *	Remember real and effective gid, and
@@ -209,7 +210,7 @@ int main(int argc, char **argv)
 	/*
 	 *	Process the options.
 	 */
-	while ((c = getopt(argc, argv, "+qpNr:mluct")) != EOF) switch(c) {
+	while ((c = getopt(argc, argv, "+qpNr:mluctP")) != EOF) switch(c) {
 		case 'q':
 			quiet = 1;
 			break;
@@ -258,6 +259,9 @@ int main(int argc, char **argv)
 			break;
 		case 't':
 			touch = 1;
+			break;
+		case 'P':
+			passthrough = 1;
 			break;
 		default:
 			usage();
@@ -431,6 +435,12 @@ int main(int argc, char **argv)
 	alarm(0);
 	lockfile_remove(lockfile);
 
+	if (passthrough) {
+		if (WIFEXITED(wstatus))
+			return WEXITSTATUS(wstatus);
+		if (WIFSIGNALED(wstatus))
+			return 128+WTERMSIG(wstatus);
+	}
 	return 0;
 }
 
