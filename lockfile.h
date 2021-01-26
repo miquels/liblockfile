@@ -36,6 +36,7 @@ int	lockfile_check(const char *lockfile, int flags);
 #define L_ERROR		5	/* Unknown error; check errno		*/
 #define L_MANLOCK	6	/* Cannot set mandatory lock on tempfile */
 #define L_ORPHANED	7	/* aksed for L_PPID but got orphaned	*/
+#define L_RMSTALE	8	/* stale lockfile, but cannot remove	*/
 
 /*
  *	Flag values for lockfile_create()

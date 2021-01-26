@@ -352,7 +352,13 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 		 *	remove the lockfile.
 		 */
 		if (lockfile_check(lockfile, flags) == -1) {
-			unlink(lockfile);
+			if (unlink(lockfile) < 0 && errno != ENOENT) {
+				/*
+				 *	we failed to unlink the stale
+				 *	lockfile, give up.
+				 */
+				return L_RMSTALE;
+			}
 			dontsleep = 1;
 			/*
 			 *	If the lockfile was invalid, then the first
