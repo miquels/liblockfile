@@ -7,6 +7,7 @@ dotlockfile \- Utility to manage lockfiles
 .RB [ \-r
 .IR retries ]
 .RB [ \-p ]
+.RB [ \-q ]
 .RB < \-m \ |
 .IR lockfile >
 .br
@@ -15,6 +16,7 @@ dotlockfile \- Utility to manage lockfiles
 .RB [ \-r
 .IR retries ]
 .RB [ \-p ]
+.RB [ \-q ]
 .RB < \-m \ |
 .IR lockfile >
 .IR cmd "\ args \&...\&"
@@ -111,6 +113,8 @@ If the environment variable
 is set, that is used instead.
 Then the string "\fI.lock\fR" is appended to get the name of the actual
 lockfile.
+.IP "\fB\-\fR"
+Suppress warning output to stderr.
 .IP lockfile
 The lockfile to be created or removed.
 Must not be specified if the \fB\-m\fR option is given.
