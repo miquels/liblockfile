@@ -169,7 +169,7 @@ void perror_exit(const char *why) {
 void usage(void)
 {
 	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-i interval] [-p] [-q] <-m|lockfile>\n");
-	fprintf(stderr, "        dotlockfile -l [-r retries] [-i interval] [-p] [-q] <-m|lockfile> command args...\n");
+	fprintf(stderr, "        dotlockfile -l [-r retries] [-i interval] [-p] [-q] <-m|lockfile> [-P] command args...\n");
 	fprintf(stderr, "        dotlockfile -u|-t\n");
 	exit(1);
 }

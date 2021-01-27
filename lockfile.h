@@ -30,13 +30,13 @@ int	lockfile_check(const char *lockfile, int flags);
  */
 #define	L_SUCCESS	0	/* Lockfile created			*/
 #define L_NAMELEN	1	/* Recipient name too long 		*/
-#define L_TMPLOCK	2	/* Error creating tmp lockfile		*/
-#define L_TMPWRITE	3	/* Can't write pid int tmp lockfile	*/
+#define L_TMPLOCK	2	/* Error creating temp lockfile		*/
+#define L_TMPWRITE	3	/* Can't write pid into temp lockfile	*/
 #define L_MAXTRYS	4	/* Failed after max. number of attempts	*/
 #define L_ERROR		5	/* Unknown error; check errno		*/
 #define L_MANLOCK	6	/* Cannot set mandatory lock on tempfile */
-#define L_ORPHANED	7	/* aksed for L_PPID but got orphaned	*/
-#define L_RMSTALE	8	/* stale lockfile, but cannot remove	*/
+#define L_ORPHANED	7	/* Called with L_PPID but parent is gone */
+#define L_RMSTALE	8	/* Failed to remove stale lockfile	*/
 
 /*
  *	Flag values for lockfile_create()

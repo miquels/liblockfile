@@ -48,7 +48,7 @@ returns one of the following status codes:
    #define L_TMPWRITE  3    /* Can't write pid int tmp lockfile     */
    #define L_MAXTRYS   4    /* Failed after max. number of attempts */
    #define L_ERROR     5    /* Unknown error; check errno           */
-
+   #define L_RMSTALE   8    /* Failed to remove stale lockfile       */
 .fi
 
 .SH NOTES

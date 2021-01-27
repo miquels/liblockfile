@@ -23,6 +23,7 @@ dotlockfile \- Utility to manage lockfiles
 .RB [ \-q ]
 .RB < \-m \ |
 .IR lockfile >
+.RB [ \-P ]
 .IR cmd "\ args \&...\&"
 .br
 .B dotlockfile
@@ -119,8 +120,14 @@ If the environment variable
 is set, that is used instead.
 Then the string "\fI.lock\fR" is appended to get the name of the actual
 lockfile.
-.IP "\fB\-\fR"
-Suppress warning output to stderr.
+.IP "\fB\-q\fR"
+Don't print warnings or errors to the standard error output. Used internally
+by liblockfile when it spawns
+.B dotlockfile
+as a helper program.
+.IP "\fB\-P\fR"
+On successful "lock and spawn command", don't exit with status zero, but
+pass through the exit value of the spawned command.
 .IP lockfile
 The lockfile to be created or removed.
 Must not be specified if the \fB\-m\fR option is given.
@@ -136,10 +143,11 @@ returns the same values as the library function
 .IR lockfile_create (3).
 Unlocking a non\-existent lockfile is not an error.
 .PP
-If a command is executed, the return value does not correspond with that
-of the command that was run.
-If the locking and unlocking was successful,
-the exit status is always zero.
+Unless the
+.B \-P
+option was supplied, when a command is executed, the return value does not
+correspond with that of the command that was run.  If locking and unlocking
+was successful, the exit status is zero.
 .SH NOTES
 The lockfile is created exactly as named on the command line.
 The extension "\fI.lock\fR" is \fInot\fR automatically appended.
