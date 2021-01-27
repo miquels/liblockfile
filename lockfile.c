@@ -19,6 +19,7 @@
 #endif
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
@@ -40,7 +41,7 @@ static int  islocked = 0;
 #endif
 
 #ifndef LIB
-extern int check_sleep(int);
+extern int check_sleep(int, int);
 #endif
 
 #ifdef MAILGROUP
@@ -227,7 +228,7 @@ static int lockfilename(const char *lockfile, char *tmplock, int tmplocksz)
 static int lockfile_create_save_tmplock(const char *lockfile,
 		char *tmplock, int tmplocksz,
 		volatile char **xtmplock,
-		int retries, int flags)
+		int retries, int interval, int flags)
 {
 	struct stat	st, st1;
 	char		pidbuf[40];
@@ -287,14 +288,17 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 	 *	Now try to link the temporary lock to the lock.
 	 */
 	for (i = 0; i < tries && tries > 0; i++) {
-
 		if (!dontsleep) {
-			sleeptime += 5;
+			if (flags & L_INTERVAL && interval > 0)
+				sleeptime = interval;
+			else
+				sleeptime += 5;
+
 			if (sleeptime > 60) sleeptime = 60;
 #ifdef LIB
 			sleep(sleeptime);
 #else
-			if ((e = check_sleep(sleeptime)) != 0) {
+			if ((e = check_sleep(sleeptime, flags)) != 0) {
 				unlink(tmplock);
 				tmplock[0] = 0;
 				return e;
@@ -312,7 +316,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 		 *	EXTRA FIX: the value of the nlink field
 		 *	can't be trusted (may be cached).
 		 */
-		(void)link(tmplock, lockfile);
+		(void)!link(tmplock, lockfile);
 
 		if (lstat(tmplock, &st1) < 0) {
 			tmplock[0] = 0;
@@ -378,7 +382,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 #ifdef LIB
 static
 #endif
-int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, int retries, int flags)
+int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, int retries, int interval, int flags)
 {
 	char *tmplock;
 	int l, r, e;
@@ -388,7 +392,7 @@ int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, 
 		return L_ERROR;
 	tmplock[0] = 0;
 	r = lockfile_create_save_tmplock(lockfile,
-						tmplock, l, xtmplock, retries, flags);
+						tmplock, l, xtmplock, retries, interval, flags);
 	if (xtmplock)
 		*xtmplock = NULL;
 	e = errno;
@@ -398,9 +402,18 @@ int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, 
 }
 
 #ifdef LIB
-int lockfile_create(const char *lockfile, int retries, int flags)
+int lockfile_create(const char *lockfile, int retries, int flags, ...)
 {
-	return lockfile_create_set_tmplock(lockfile, NULL, retries, flags);
+	va_list args;
+	int interval = 0;
+
+	if (flags & L_INTERVAL) {
+		va_start(args, flags);
+		interval = va_arg(args, int);
+		va_end(args);
+	}
+
+	return lockfile_create_set_tmplock(lockfile, NULL, retries, interval, flags);
 }
 #endif
 
