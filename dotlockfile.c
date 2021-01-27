@@ -42,7 +42,7 @@ extern int optind;
 
 extern int is_maillock(const char *lockfile);
 extern int lockfile_create_set_tmplock(const char *lockfile,
-			volatile char **tmplock, int retries, int interval, int flags);
+			volatile char **tmplock, int retries, int flags, struct lockargs *);
 
 static volatile char *tmplock;
 static int quiet;
@@ -177,6 +177,7 @@ void usage(void)
 int main(int argc, char **argv)
 {
 	struct passwd	*pwd;
+	struct lockargs args;
 	gid_t		gid, egid;
 	char		*lockfile = NULL;
 	char		**cmd = NULL;
@@ -203,6 +204,8 @@ int main(int argc, char **argv)
 		if (setregid(-1, gid) < 0)
 			perror_exit("setregid(-1, gid)");
 	}
+
+	memset(&args, 0, sizeof(struct lockargs));
 
 	set_signal(SIGINT, got_signal);
 	set_signal(SIGQUIT, got_signal);
@@ -267,6 +270,7 @@ int main(int argc, char **argv)
 				return L_ERROR;
 			}
 			flags |= L_INTERVAL;
+			args.interval = interval;
 			break;
 		case 't':
 			touch = 1;
@@ -388,7 +392,7 @@ int main(int argc, char **argv)
 	/*
 	 *	No, lock.
 	 */
-	r = lockfile_create_set_tmplock(lockfile, &tmplock, retries, interval, flags);
+	r = lockfile_create_set_tmplock(lockfile, &tmplock, retries, flags, &args);
 	if (r != 0 || !cmd)
 		return r;
 

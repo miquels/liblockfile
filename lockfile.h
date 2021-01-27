@@ -45,6 +45,13 @@ int	lockfile_check(const char *lockfile, int flags);
 #define L_PPID		32	/* Put PPID in lockfile			*/
 #define L_INTERVAL	64	/* Specify consistent retry interval	*/
 
+/*
+ * Optional arguments for lockfile_create.
+ */
+struct lockargs {
+	int interval;		/* Static interval between retries	*/
+};
+
 #ifdef  __cplusplus
 }
 #endif

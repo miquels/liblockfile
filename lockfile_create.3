@@ -1,4 +1,4 @@
-.TH LOCKFILE_CREATE 3  "05 Januari 2017" "Linux Manpage" "Linux Programmer's Manual"
+.TH LOCKFILE_CREATE 3  "27 Januari 2021" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
 lockfile_create, lockfile_remove, lockfile_touch, lockfile_check \- manage lockfiles
 .SH SYNOPSIS
@@ -6,14 +6,44 @@ lockfile_create, lockfile_remove, lockfile_touch, lockfile_check \- manage lockf
 .sp
 .BI "cc [ "flag " ... ] "file " ... -llockfile [ "library " ] "
 .sp
-.BI "int lockfile_create( const char *" lockfile ", int " retrycnt ", int " flags " );"
+.BI "int lockfile_create( const char *" lockfile ", int " retrycnt ", int " flags " [, struct lockargs " args " ] );"
 .br
 .BI "int lockfile_remove( const char *" lockfile " );"
 .br
 .BI "int lockfile_touch( const char *" lockfile " );"
 .br
 .BI "int lockfile_check( const char *" lockfile ", int " flags "  );"
+.br
 .SH DESCRIPTION
+Functions to handle lockfiles in an NFS safe way.
+.PP
+
+.PP
+.SS The lockargs structure
+.sp
+.PP
+.in +4n
+.EX
+.nf
+struct lockargs {
+    int interval;
+}
+.EE
+.in
+.PP
+If
+.IR flags
+contains one of the following:
+.TP 4
+.I L_INTERVAL
+.PP
+then after the
+.IR flags
+argument, a pointer to a
+.B struct lockargs
+follows.
+.PP
+.SS lockfile_create
 The
 .B lockfile_create
 function creates a lockfile in an NFS safe way.
@@ -46,15 +76,22 @@ function is provided: while holding the lock, it needs to be refreshed
 regulary (every minute or so) by calling
 .B lockfile_touch "() ".
 .PP
-The
-.B
-lockfile_check
-function checks if a valid lockfile is already present without trying to
+If the
+.B L_INTERVAL
+flag is set, then the interval between retries will not increase every retry,
+but the initial delay and the interval between retries will be the value of the
+.IR interval
+member of
+.B struct stat .
+.PP
+.SS lockfile_check
+.PP
+This function checks if a valid lockfile is already present without trying to
 create a new lockfile.
 .PP
-Finally the
-.B lockfile_remove
-function removes the lockfile.
+.SS lockfile_remove
+.PP
+Removes the lockfile.
 
 .SH RETURN VALUES
 .B lockfile_create
@@ -112,7 +149,8 @@ Before retrying, we sleep for \fIn\fP seconds. \fIn\fP is initially 5
 seconds, but after every retry 5 extra seconds is added up to a maximum
 of 60 seconds (an incremental backoff). Then we go to
 step \fI2\fP up to \fIretries\fP times.
-
+.br
+(Note that the interval between retries can be changed using L_INTERVAL).
 .PP
 .SH REMOTE FILE SYSTEMS AND THE KERNEL ATTRIBUTE CACHE
 .PP

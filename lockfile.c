@@ -228,7 +228,7 @@ static int lockfilename(const char *lockfile, char *tmplock, int tmplocksz)
 static int lockfile_create_save_tmplock(const char *lockfile,
 		char *tmplock, int tmplocksz,
 		volatile char **xtmplock,
-		int retries, int interval, int flags)
+		int retries, int flags, struct lockargs *args)
 {
 	struct stat	st, st1;
 	char		pidbuf[40];
@@ -239,6 +239,11 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 	int		i, e, pidlen;
 	int		dontsleep = 1;
 	int		tries = retries + 1;
+
+	/* process optional flags that have arguments */
+	if (flags & L_INTERVAL) {
+		sleeptime = args->interval;
+	}
 
 	/* decide which PID to write to the lockfile */
 	if (flags & L_PID)
@@ -289,9 +294,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 	 */
 	for (i = 0; i < tries && tries > 0; i++) {
 		if (!dontsleep) {
-			if (flags & L_INTERVAL && interval > 0)
-				sleeptime = interval;
-			else
+			if (!(flags & L_INTERVAL))
 				sleeptime += 5;
 
 			if (sleeptime > 60) sleeptime = 60;
@@ -382,7 +385,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 #ifdef LIB
 static
 #endif
-int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, int retries, int interval, int flags)
+int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, int retries, int flags, struct lockargs *args)
 {
 	char *tmplock;
 	int l, r, e;
@@ -392,7 +395,7 @@ int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, 
 		return L_ERROR;
 	tmplock[0] = 0;
 	r = lockfile_create_save_tmplock(lockfile,
-						tmplock, l, xtmplock, retries, interval, flags);
+						tmplock, l, xtmplock, retries, flags, args);
 	if (xtmplock)
 		*xtmplock = NULL;
 	e = errno;
@@ -405,15 +408,15 @@ int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, 
 int lockfile_create(const char *lockfile, int retries, int flags, ...)
 {
 	va_list args;
-	int interval = 0;
+	struct lockargs *lockargs = NULL;
 
 	if (flags & L_INTERVAL) {
 		va_start(args, flags);
-		interval = va_arg(args, int);
+		lockargs = va_arg(args, struct lockargs *);
 		va_end(args);
 	}
 
-	return lockfile_create_set_tmplock(lockfile, NULL, retries, interval, flags);
+	return lockfile_create_set_tmplock(lockfile, NULL, retries, flags, lockargs);
 }
 #endif
 
