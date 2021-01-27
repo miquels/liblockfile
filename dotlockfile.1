@@ -6,6 +6,8 @@ dotlockfile \- Utility to manage lockfiles
 .B \-l
 .RB [ \-r
 .IR retries ]
+.RB [ \-i
+.IR interval ]
 .RB [ \-p ]
 .RB [ \-q ]
 .RB < \-m \ |
@@ -15,6 +17,8 @@ dotlockfile \- Utility to manage lockfiles
 .B \-l
 .RB [ \-r
 .IR retries ]
+.RB [ \-i
+.IR interval ]
 .RB [ \-p ]
 .RB [ \-q ]
 .RB < \-m \ |
@@ -61,8 +65,8 @@ were already taken \(en hence the name \fBdotlockfile\fR \fI:)\fR.
 .SH OPTIONS
 .IP "\fB\-l\fR"
 Create a lockfile if no preexisting valid lockfile is found, else wait and retry
-according to option \fB\-r\fR.
-This option is the default, so it can be left off.
+according to option \fB\-r\fR.  Retry interval can be explicitly set with option \fB\-i\fR.
+This option (\fB-l\fR) is the default, so it can be left off.
 
 A lockfile is treated as valid,
 .br
@@ -80,10 +84,12 @@ The number of times
 retries to acquire the lock if it failed the first time before giving up.
 The initial sleep after failing to acquire the lock is 5\ seconds.
 After each retry the sleep interval is increased incrementally by 5\ seconds
-up to a maximum sleep of 60\ seconds between tries.
+up to a maximum sleep of 60\ seconds between tries unless overridden by \fB\-i\fR.
 The default number of retries is 5.
 To try only once, use "\fB\-r 0\fR".
 To try indefinitely, use "\fB\-r \-1\fR".
+.IP "\fB\-i interval\fR"
+Sets a consistent retry interval.
 .IP "\fB\-u\fR"
 Remove a lockfile.
 .IP "\fB\-t\fR"

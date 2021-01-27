@@ -42,7 +42,7 @@ extern int optind;
 
 extern int is_maillock(const char *lockfile);
 extern int lockfile_create_set_tmplock(const char *lockfile,
-			volatile char **tmplock, int retries, int flags);
+			volatile char **tmplock, int retries, int interval, int flags);
 
 static volatile char *tmplock;
 static int quiet;
@@ -81,18 +81,22 @@ int set_signal(int sig, void (*handler)(int))
 }
 
 /*
- *	Sleep for an amout of time while regulary checking if
+ *	Sleep for an amount of time while regulary checking if
  *	our parent is still alive.
  */
-int check_sleep(int sleeptime)
+int check_sleep(int sleeptime, int flags)
 {
 	int		i;
+	int		interval = 5;
 	static int	ppid = 0;
 
 	if (ppid == 0) ppid = getppid();
 
-	for (i = 0; i < sleeptime; i += 5) {
-		sleep(5);
+	if (flags & L_INTERVAL)
+		interval = 1;
+
+	for (i = 0; i < sleeptime; i += interval) {
+		sleep(interval);
 		if (kill(ppid, 0) < 0 && errno == ESRCH)
 			return L_ERROR;
 	}
@@ -164,8 +168,8 @@ void perror_exit(const char *why) {
  */
 void usage(void)
 {
-	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-p] [-q] <-m|lockfile>\n");
-	fprintf(stderr, "        dotlockfile -l [-r retries] [-p] [-q] <-m|lockfile> command args...\n");
+	fprintf(stderr, "Usage:  dotlockfile -l [-r retries] [-i interval] [-p] [-q] <-m|lockfile>\n");
+	fprintf(stderr, "        dotlockfile -l [-r retries] [-i interval] [-p] [-q] <-m|lockfile> command args...\n");
 	fprintf(stderr, "        dotlockfile -u|-t\n");
 	exit(1);
 }
@@ -178,6 +182,7 @@ int main(int argc, char **argv)
 	char		**cmd = NULL;
 	int 		c, r;
 	int		retries = 5;
+	int		interval = 0;
 	int		flags = 0;
 	int		lock = 0;
 	int		unlock = 0;
@@ -208,7 +213,7 @@ int main(int argc, char **argv)
 	/*
 	 *	Process the options.
 	 */
-	while ((c = getopt(argc, argv, "+qpNr:mluctP")) != EOF) switch(c) {
+	while ((c = getopt(argc, argv, "+qpNr:mluci:tP")) != EOF) switch(c) {
 		case 'q':
 			quiet = 1;
 			break;
@@ -254,6 +259,14 @@ int main(int argc, char **argv)
 			break;
 		case 'c':
 			check = 1;
+			break;
+		case 'i':
+			interval = atoi(optarg);
+			if (interval <= 0 && strcmp(optarg, "0") != 0) {
+				fprintf(stderr, "dotlockfile: -i needs argument >= 0\n");
+				return L_ERROR;
+			}
+			flags |= L_INTERVAL;
 			break;
 		case 't':
 			touch = 1;
@@ -375,7 +388,7 @@ int main(int argc, char **argv)
 	/*
 	 *	No, lock.
 	 */
-	r = lockfile_create_set_tmplock(lockfile, &tmplock, retries, flags);
+	r = lockfile_create_set_tmplock(lockfile, &tmplock, retries, interval, flags);
 	if (r != 0 || !cmd)
 		return r;
 

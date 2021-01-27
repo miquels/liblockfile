@@ -38,5 +38,23 @@ fi
 wait
 [ ! -f testlock.lock ] || { echo "lockfile still exists after running cmd"; exit 1; }
 
+# test locking with given sleep interval
+dotlockfile -l -r 0 testlock.lock
+dotlockfile -l -i 4 testlock.lock /bin/true &
+
+time_start=$(date '+%s')
+
+sleep 4.5
+dotlockfile -u testlock.lock
+
+wait
+
+time_end=$(date '+%s')
+time_elapsed=`expr $time_end - $time_start`
+
+# Time should equal 8 seconds
+[ "$time_elapsed" = '8' ] || { echo "lockfile should take 8 seconds to be replaced. [$time_elapsed]"; exit 1; }
+[ ! -f testlock.lock ] || { echo "lockfile still exists after running cmd"; exit 1; }
+
 echo "tests OK"
 
