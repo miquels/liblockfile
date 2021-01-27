@@ -1,2 +1,10 @@
 .pc/
 .nfs*
+*.a
+*.o
+Makefile
+autoconf.h
+config.log
+config.status
+dotlockfile
+maillock.h
