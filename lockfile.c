@@ -312,7 +312,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 		 *	EXTRA FIX: the value of the nlink field
 		 *	can't be trusted (may be cached).
 		 */
-		(void)link(tmplock, lockfile);
+		(void)!link(tmplock, lockfile);
 
 		if (lstat(tmplock, &st1) < 0) {
 			tmplock[0] = 0;
