@@ -20,7 +20,7 @@ extern "C" {
 /*
  *	Prototypes.
  */
-int	lockfile_create(const char *lockfile, int retries, int flags, ...);
+int	lockfile_create(const char *lockfile, int retries, int flags);
 int	lockfile_remove(const char *lockfile);
 int	lockfile_touch(const char *lockfile);
 int	lockfile_check(const char *lockfile, int flags);
@@ -43,14 +43,20 @@ int	lockfile_check(const char *lockfile, int flags);
  */
 #define L_PID		16	/* Put PID in lockfile			*/
 #define L_PPID		32	/* Put PPID in lockfile			*/
-#define L_INTERVAL	64	/* Specify consistent retry interval	*/
 
 /*
- * Optional arguments for lockfile_create.
+ * Experimental.
  */
-struct lockargs {
+struct __lockargs {
 	int interval;		/* Static interval between retries	*/
 };
+#define __L_INTERVAL	64	/* Specify consistent retry interval	*/
+#ifdef LOCKFILE_EXPERIMENTAL
+#define lockargs	__lockargs
+#define L_INTERVAL	__L_INTERVAL
+int	lockfile_create2(const char *lockfile, int retries,
+		int flags, struct lockargs *args, int args_sz);
+#endif
 
 #ifdef  __cplusplus
 }

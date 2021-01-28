@@ -42,7 +42,7 @@ extern int optind;
 
 extern int is_maillock(const char *lockfile);
 extern int lockfile_create_set_tmplock(const char *lockfile,
-			volatile char **tmplock, int retries, int flags, struct lockargs *);
+			volatile char **tmplock, int retries, int flags, struct __lockargs *);
 
 static volatile char *tmplock;
 static int quiet;
@@ -92,7 +92,7 @@ int check_sleep(int sleeptime, int flags)
 
 	if (ppid == 0) ppid = getppid();
 
-	if (flags & L_INTERVAL)
+	if (flags & __L_INTERVAL)
 		interval = 1;
 
 	for (i = 0; i < sleeptime; i += interval) {
@@ -177,7 +177,7 @@ void usage(void)
 int main(int argc, char **argv)
 {
 	struct passwd	*pwd;
-	struct lockargs args;
+	struct __lockargs args = { 0 };
 	gid_t		gid, egid;
 	char		*lockfile = NULL;
 	char		**cmd = NULL;
@@ -204,8 +204,6 @@ int main(int argc, char **argv)
 		if (setregid(-1, gid) < 0)
 			perror_exit("setregid(-1, gid)");
 	}
-
-	memset(&args, 0, sizeof(struct lockargs));
 
 	set_signal(SIGINT, got_signal);
 	set_signal(SIGQUIT, got_signal);
@@ -269,7 +267,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "dotlockfile: -i needs argument >= 0\n");
 				return L_ERROR;
 			}
-			flags |= L_INTERVAL;
+			flags |= __L_INTERVAL;
 			args.interval = interval;
 			break;
 		case 't':

@@ -228,7 +228,7 @@ static int lockfilename(const char *lockfile, char *tmplock, int tmplocksz)
 static int lockfile_create_save_tmplock(const char *lockfile,
 		char *tmplock, int tmplocksz,
 		volatile char **xtmplock,
-		int retries, int flags, struct lockargs *args)
+		int retries, int flags, struct __lockargs *args)
 {
 	struct stat	st, st1;
 	char		pidbuf[40];
@@ -241,7 +241,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 	int		tries = retries + 1;
 
 	/* process optional flags that have arguments */
-	if (flags & L_INTERVAL) {
+	if (flags & __L_INTERVAL) {
 		sleeptime = args->interval;
 	}
 
@@ -294,7 +294,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 	 */
 	for (i = 0; i < tries && tries > 0; i++) {
 		if (!dontsleep) {
-			if (!(flags & L_INTERVAL))
+			if (!(flags & __L_INTERVAL))
 				sleeptime += 5;
 
 			if (sleeptime > 60) sleeptime = 60;
@@ -385,7 +385,7 @@ static int lockfile_create_save_tmplock(const char *lockfile,
 #ifdef LIB
 static
 #endif
-int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, int retries, int flags, struct lockargs *args)
+int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, int retries, int flags, struct __lockargs *args)
 {
 	char *tmplock;
 	int l, r, e;
@@ -405,19 +405,29 @@ int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, 
 }
 
 #ifdef LIB
-int lockfile_create(const char *lockfile, int retries, int flags, ...)
+int lockfile_create(const char *lockfile, int retries, int flags)
 {
-	va_list args;
-	struct lockargs *lockargs = NULL;
-
-	if (flags & L_INTERVAL) {
-		va_start(args, flags);
-		lockargs = va_arg(args, struct lockargs *);
-		va_end(args);
+	if (flags & ~(L_PID|L_PPID)) {
+		errno = ENOTSUP;
+		return L_ERROR;
 	}
 
-	return lockfile_create_set_tmplock(lockfile, NULL, retries, flags, lockargs);
+	return lockfile_create_set_tmplock(lockfile, NULL, retries, flags, NULL);
 }
+
+#ifdef STATIC
+int lockfile_create2(const char *lockfile, int retries,
+		int flags, struct __lockargs *args, int args_sz)
+{
+	if (args != NULL && sizeof(struct __lockargs) != args_sz) {
+		errno = ENOTSUP;
+		return L_ERROR;
+	}
+
+	return lockfile_create_set_tmplock(lockfile, NULL, retries, flags, args);
+}
+#endif
+
 #endif
 
 /*

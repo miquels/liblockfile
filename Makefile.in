@@ -32,16 +32,16 @@ nfslib:		nfslock.so.$(NFSVER)
 liblockfile.a:	lockfile.o
 		$(AR) rv liblockfile.a lockfile.o
 
-liblockfile.so: liblockfile.a
+liblockfile.so: solockfile.o
 		$(CC) $(LDFLAGS) -fPIC -shared -Wl,-soname,liblockfile.so.1 \
-			-o liblockfile.so lockfile.o -lc
+			-o liblockfile.so solockfile.o -lc
 
 nfslock.so.$(NFSVER):	nfslock.o
 		$(CC) $(LDFLAGS) -fPIC -shared -Wl,-soname,nfslock.so.0 \
 			-o nfslock.so.$(NFSVER) nfslock.o
 
-dotlockfile:	dotlockfile.o xlockfile.o
-		$(CC) $(LDFLAGS) -o dotlockfile dotlockfile.o xlockfile.o
+dotlockfile:	dotlockfile.o dlockfile.o
+		$(CC) $(LDFLAGS) -o dotlockfile dotlockfile.o dlockfile.o
 
 dotlockfile.o:	dotlockfile.c
 		$(CC) $(CFLAGS) -DLOCKPROG=\"$(bindir)/dotlockfile\" \
@@ -49,11 +49,15 @@ dotlockfile.o:	dotlockfile.c
 
 lockfile.o:	lockfile.c
 		$(CC) $(CFLAGS) -DLIB -DLOCKPROG=\"$(bindir)/dotlockfile\" \
-			-c lockfile.c
+			-DSTATIC -c lockfile.c
 
-xlockfile.o:	lockfile.c
+solockfile.o:	lockfile.c
+		$(CC) $(CFLAGS) -DLIB -DLOCKPROG=\"$(bindir)/dotlockfile\" \
+			-c lockfile.c -o solockfile.o
+
+dlockfile.o:	lockfile.c
 		$(CC) $(CFLAGS) -DLOCKPROG=\"$(bindir)/dotlockfile\" \
-			-c lockfile.c -o xlockfile.o
+			-c lockfile.c -o dlockfile.o
 
 install_static:	static install_common
 		install -d -m 755 -g root -p $(libdir)
