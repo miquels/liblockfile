@@ -55,6 +55,7 @@ or
 then lockfile_create will not only check for an existing lockfile, but
 it will read the contents as well to see if it contains a process id
 in ASCII. If so, the lockfile is only valid if that process still exists.
+Otherwise, a lockfile older than 5 minutes is considered to be stale.
 .PP
 When creating a lockfile, if
 .B L_PID
@@ -66,23 +67,24 @@ command uses that). In such cases you can use the
 .B L_PPID
 flag instead.
 .PP
-If the lockfile is on a shared filesystem, it might have been created by
-a process on a remote host. Thus the process-id checking is useless and
-the L_PID flag should not be set. In this case,
-there is no good way to see if a lockfile is stale. Therefore if the lockfile
-is older then 5 minutes, it will be removed. That is why the
-.B lockfile_touch
-function is provided: while holding the lock, it needs to be refreshed
-regulary (every minute or so) by calling
-.B lockfile_touch "() ".
-.PP
 If the
 .B L_INTERVAL
 flag is set, then the interval between retries will not increase every retry,
 but the initial delay and the interval between retries will be the value of the
 .IR interval
 member of
-.B struct stat .
+.B struct lockargs .
+.PP
+.SS lockfile_touch
+If the lockfile is on a shared filesystem, it might have been created by
+a process on a remote host. So the L_PID or L_PPID method of deciding
+if a lockfile is still valid or stale is incorrect and must not be used.
+If you are holding a lock longer than 5 minutes, a call to
+.B lockfile_create
+by another process will consider the lock stale and remove it.
+To prevent this, call
+.B lockfile_touch
+to refresh the lockfile at a regular interval (every minute or so).
 .PP
 .SS lockfile_check
 .PP
