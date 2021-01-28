@@ -1,7 +1,9 @@
 liblockfile (1.17)
 
-  * Allow passing through the child exit code
-  * Document -q
+  * dotlockfile: '-P' option: allow passing through the child exit code
+  * dotlockfile: '-i interval' option.
+  * dotlockfile: document -q
+  * add L_RMSTALE return status (failed to remove stale lock)
   * remove cistron.nl email address
 
  -- Miquel van Smoorenburg Wed, 27 Jan 2021 00:33:10 +0100
