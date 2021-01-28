@@ -407,11 +407,11 @@ int lockfile_create_set_tmplock(const char *lockfile, volatile char **xtmplock, 
 #ifdef LIB
 int lockfile_create(const char *lockfile, int retries, int flags)
 {
+	/* check against unknown flags */
 	if (flags & ~(L_PID|L_PPID)) {
-		errno = ENOTSUP;
+		errno = EINVAL;
 		return L_ERROR;
 	}
-
 	return lockfile_create_set_tmplock(lockfile, NULL, retries, flags, NULL);
 }
 
@@ -419,11 +419,25 @@ int lockfile_create(const char *lockfile, int retries, int flags)
 int lockfile_create2(const char *lockfile, int retries,
 		int flags, struct __lockargs *args, int args_sz)
 {
+
+	#define FLAGS_WITH_ARGS (__L_INTERVAL)
+	#define KNOWN_FLAGS (L_PID|L_PPID|__L_INTERVAL)
+
+	/* check if size is the same (version check) */
 	if (args != NULL && sizeof(struct __lockargs) != args_sz) {
-		errno = ENOTSUP;
+		errno = EINVAL;
 		return L_ERROR;
 	}
-
+	/* some flags _must_ have a non-null args */
+	if (args == NULL && (flags & FLAGS_WITH_ARGS)) {
+		errno = EINVAL;
+		return L_ERROR;
+	}
+	/* check against unknown flags */
+	if (flags & ~KNOWN_FLAGS) {
+		errno = EINVAL;
+		return L_ERROR;
+	}
 	return lockfile_create_set_tmplock(lockfile, NULL, retries, flags, args);
 }
 #endif
