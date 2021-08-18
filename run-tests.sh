@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 #
 #	Some simple tests to check if locking/unlocking works correctly.
 #
@@ -25,13 +25,11 @@ PID=$!
 sleep 1
 
 # locking again should fail
-if dotlockfile -l -r 0 testlock.lock
-then
-	if kill -0 $PID 2>/dev/null
-	then
-		echo "double lock while running command"
-		exit 1
-	fi
+if dotlockfile -l -r 0 testlock.lock; then
+    if kill -0 "$PID" 2>/dev/null; then
+        echo "double lock while running command"
+        exit 1
+    fi
 fi
 
 # lock should be gone when command completes
@@ -50,11 +48,10 @@ dotlockfile -u testlock.lock
 wait
 
 time_end=$(date '+%s')
-time_elapsed=`expr $time_end - $time_start`
+time_elapsed=$((time_end - time_start))
 
 # Time should equal 8 seconds
-[ "$time_elapsed" = '8' ] || { echo "lockfile should take 8 seconds to be replaced. [$time_elapsed]"; exit 1; }
+[ "$time_elapsed" = 8 ] || { echo "lockfile should take 8 seconds to be replaced. [$time_elapsed]"; exit 1; }
 [ ! -f testlock.lock ] || { echo "lockfile still exists after running cmd"; exit 1; }
 
 echo "tests OK"
-
