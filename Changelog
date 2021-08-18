@@ -47,9 +47,9 @@ liblockfile (1.13)
 
   * remove '-t' as option when running a command- do touchlock
     automatically if -p was not given.
-  * drop effective gid asap, retain as saved gid. only restore egid if nessecary.
+  * drop effective gid asap, retain as saved gid. only restore egid if necessary.
   * if stat() fails, drop saved gid as well, and retry (sshfs is strict)
-  * don't allow executing a command with the -m option, not nessecary.
+  * don't allow executing a command with the -m option, not necessary.
     should really add a minimal setgid util for maillock(), remove setgid
     from dotlockfile, and let it use the library maillock().
 
@@ -294,7 +294,7 @@ liblockfile (0.1-2) unstable; urgency=low
   * Compiled with libc6 and with -lc
   * Compile with -D_REENTRANT and -D_GNU_SOURCE
   * Apart from returning the L_XXX values, also set errno to something
-    resonable.
+    reasonable.
   * Reckognize common NFS lockfiles from mailx
 
  -- Miquel van Smoorenburg <miquels@cistron.nl>  Wed, 24 Sep 1997 12:52:44 +0200

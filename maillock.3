@@ -62,7 +62,7 @@ These functions call
 .BR lockfile_create "(3)"
 to do the work. That function might spawn a set group-id executable
 to do the actual locking if the current process doesn't have enough
-priviliges.
+privileges.
 .PP
 There are some issues with flushing the kernels attribute cache if
 you are using NFS - see the
