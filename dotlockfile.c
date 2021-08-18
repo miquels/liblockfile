@@ -104,7 +104,7 @@ int check_sleep(int sleeptime, int flags)
 }
 
 /*
- *	Split a filename up in  file and directory.
+ *	Split a filename up in file and directory.
  */
 int fn_split(char *fn, char **fn_p, char **dir_p)
 {
@@ -456,4 +456,3 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
-

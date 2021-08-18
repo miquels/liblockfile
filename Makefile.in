@@ -115,4 +115,3 @@ distclean:	clean
 		rm -f Makefile autoconf.h maillock.h \
 			config.cache config.log config.status; \
 		rm -rf autom4te.cache
-
