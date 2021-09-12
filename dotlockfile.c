@@ -81,7 +81,7 @@ int set_signal(int sig, void (*handler)(int))
 }
 
 /*
- *	Sleep for an amount of time while regulary checking if
+ *	Sleep for an amount of time while regularly checking if
  *	our parent is still alive.
  */
 int check_sleep(int sleeptime, int flags)
@@ -104,7 +104,7 @@ int check_sleep(int sleeptime, int flags)
 }
 
 /*
- *	Split a filename up in  file and directory.
+ *	Split a filename up in file and directory.
  */
 int fn_split(char *fn, char **fn_p, char **dir_p)
 {
@@ -164,7 +164,7 @@ void perror_exit(const char *why) {
 }
 
 /*
- *	Print usage mesage and exit.
+ *	Print usage message and exit.
  */
 void usage(void)
 {
@@ -322,7 +322,7 @@ int main(int argc, char **argv)
 	if (gid != egid) {
 		/*
 		 *	See if the requested lock is for a mailbox.
-		 *	First, remember currect working directory.
+		 *	First, remember current working directory.
 		 */
 #ifdef O_PATH
 		cwd_fd = open(".", O_PATH|O_CLOEXEC);
@@ -456,4 +456,3 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
-

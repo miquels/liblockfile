@@ -1,4 +1,3 @@
-
 			README for liblockfile
 
 
@@ -37,5 +36,3 @@ lockfile_create,
 lockfile_remove,
 lockfile_touch,
 lockfile_check -		lockfile_create.3
-
-

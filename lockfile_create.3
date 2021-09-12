@@ -1,4 +1,4 @@
-.TH LOCKFILE_CREATE 3  "27 Januari 2021" "Linux Manpage" "Linux Programmer's Manual"
+.TH LOCKFILE_CREATE 3  "27 January 2021" "Linux Manpage" "Linux Programmer's Manual"
 .SH NAME
 lockfile_create, lockfile_remove, lockfile_touch, lockfile_check \- manage lockfiles
 .SH SYNOPSIS
@@ -126,7 +126,7 @@ However in a lot of cases, such as Unix mailboxes, all concerned programs
 accessing the mailboxes agree on the fact that the presence of
 <filename>.lock means that <filename> is locked.
 .PP
-If you are using 
+If you are using
 .B lockfile_create
 to create a lock on a file that resides on a remote server, and you
 already have that file open, you need to flush the NFS attribute cache
@@ -138,7 +138,7 @@ o
 open /var/mail/USERNAME
 .TP 3
 o
-attributes, such as size, inode, etc are now cached in the kernel! 
+attributes, such as size, inode, etc are now cached in the kernel!
 .TP 3
 o
 meanwhile, another remote system appends data to /var/mail/USERNAME

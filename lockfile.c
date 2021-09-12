@@ -611,4 +611,3 @@ void touchlock(void)
 	lockfile_touch(mlockfile);
 }
 #endif
-
