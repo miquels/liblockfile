@@ -8,3 +8,4 @@ config.log
 config.status
 dotlockfile
 maillock.h
+/autom4te.cache/

@@ -37,7 +37,8 @@ dnl extra argument: --with-libnfslock
 nfslockdir="$libdir"
 AC_MSG_CHECKING(build libnfslock)
 AC_ARG_WITH(libnfslock,
-[  --with-libnfslock[=DIR] Build libnfslock (and install in DIR)],
+[AS_HELP_STRING([--with-libnfslock[=DIR]],
+               [Build libnfslock (and install in DIR)])],
 [ case "$withval" in
     no)
 	LIBNFSLOCK=no
@@ -54,9 +55,10 @@ AC_ARG_WITH(libnfslock,
 AC_SUBST(LIBNFSLOCK)
 AC_MSG_RESULT($LIBNFSLOCK)
 
-dnl extra argument: --with-mailgroup[=mail]
+dnl extra argument: --with-mailgroup[=group]
 AC_ARG_WITH(mailgroup,
-[  --with-mailgroup[=group] Run setgid (mail) to write to the mailspool],
+[AS_HELP_STRING([--with-mailgroup[=GROUP]],
+                [Run setgid (group "mail" by default) to write to the mailspool directory])],
 [ case "$withval" in
     yes)
 	MAILGROUP="mail"
@@ -67,7 +69,7 @@ AC_ARG_WITH(mailgroup,
   esac ]
 )
 if test "$MAILGROUP" != ""; then
-    AC_DEFINE_UNQUOTED(MAILGROUP, "$MAILGROUP")
+    AC_DEFINE_UNQUOTED([MAILGROUP], ["$MAILGROUP"], [If the mailspool is group-writable, defined as that group; undefined otherwise.])
 fi
 AC_SUBST(MAILGROUP)
 
