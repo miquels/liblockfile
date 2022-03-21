@@ -4,6 +4,7 @@
  *		the Svr4 maillock functions.
  *
  *		Copyright (C) Miquel van Smoorenburg and contributors 1997-2021.
+ *		Copyright 2022 Fabrice BAUZAC-STEHLY.
  *
  *		This library is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU Library General Public
@@ -472,7 +473,7 @@ int lockfile_check(const char *lockfile, int flags)
 		 */
 		len = 0;
 		if (fstat(fd, &st) == 0 &&
-		    (len = read(fd, buf, sizeof(buf))) >= 0 &&
+		    (len = read(fd, buf, sizeof(buf)-1)) >= 0 &&
 		    fstat(fd, &st2) == 0 &&
 		    st.st_atime != st2.st_atime)
 			now = st.st_atime;
