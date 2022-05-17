@@ -8,3 +8,7 @@ config.log
 config.status
 dotlockfile
 maillock.h
+*.so
+/autom4te.cache/
+/test-stamp
+configure
