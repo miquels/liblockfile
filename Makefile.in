@@ -101,12 +101,12 @@ tar:		tarball
 		@:
 
 tarball:	clean
-		(tar --xform "s/^liblockfile/liblockfile-$(VERSION)/" \
+		tar --xform "s/^liblockfile/liblockfile-$(VERSION)/" \
 			--exclude Makefile --exclude autoconf.h --exclude maillock.h \
 			--exclude config.cache --exclude config.log --exclude config.status \
 			--exclude autom4te.cache \
 			--exclude-vcs --exclude-vcs-ignores \
-			-C .. -czf ../liblockfile-$(VERSION).tar.gz liblockfile )
+			-C .. -czf ../liblockfile-$(VERSION).tar.gz liblockfile
 
 clean:
 		rm -f *.a *.o *.so *.so.* dotlockfile test-stamp
