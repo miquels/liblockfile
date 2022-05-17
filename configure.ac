@@ -88,6 +88,9 @@ AC_CHECK_FUNCS( \
 	utimes \
 )
 
+dnl paths.h defines _PATH_MAILDIR to the mail directory.
+dnl If we don't have paths.h, then we need to define it ourselves.
+dnl In both cases, we set @PATHMAILDIR@ to a C line of code that makes sure _PATH_MAILDIR is defined.
 if test "$ac_cv_header_paths_h" != "yes";
 then
     dnl Find out where the mail spool is.
